@@ -1,2 +1,0 @@
-[General]
-Geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\x1~\0\0\0\xaa\0\0\ra\0\0\x5w\0\0\x1\x81\0\0\0\xff\0\0\r^\0\0\x5t\0\0\0\0\0\0\0\0\xf\0\0\0\x1\x81\0\0\0\xff\0\0\r^\0\0\x5t)

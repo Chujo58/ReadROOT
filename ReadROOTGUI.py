@@ -50,7 +50,8 @@ class GUI(_root_reader):
         self.window._window
         self.grid_top = self.window.place_object(_g.GridLayout(False))
         self.window.new_autorow()
-        self.grid_bot = self.window.place_object(_g.GridLayout(False))
+        self.grid_bot = self.window.place_object(_g.GridLayout(False), alignment=0)
+        self.grid_top.set_column_stretch(1,1)
 
         #Buttons
         self.button_folder = self.grid_top.place_object(_g.Button('Search folder'))
@@ -194,7 +195,7 @@ class GUI(_root_reader):
         self.settings.connect_signal_changed('Plot Settings/Fill Color/HEX CODE', self.__hexfill__)
 
         #Graph Area
-        self.TabAreaData = self.grid_bot.place_object(_g.TabArea(name+'_tabs_data.txt'), 1, 0, alignment=0).set_width(700*self.ratio)
+        self.TabAreaData = self.grid_bot.place_object(_g.TabArea(name+'_tabs_data.txt'), 1, 0, alignment=0)#.set_width(700*self.ratio)
         self.TabData = self.TabAreaData.add_tab('Data')
         self.data = self.TabData.place_object(_g.DataboxSaveLoad(file_type='.txt', autosettings_path=name+'_data.txt'), alignment=0).set_width(700*self.ratio)
         self.data.enable_save()
