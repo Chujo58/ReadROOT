@@ -1,0 +1,13 @@
+/GUI/Range for calculation|expanded	True
+/GUI/Range for calculation/Minimum	500.0
+/GUI/Range for calculation/Minimum|expanded	True
+/GUI/Range for calculation/Maximum	600.0
+/GUI/Range for calculation/Maximum|expanded	True
+/GUI/Results|expanded	True
+/GUI/Results/Average	11.665312022713922
+/GUI/Results/Average|expanded	True
+/GUI/Results/Median	11.687
+/GUI/Results/Median|expanded	True
+/GUI/Results/Standard deviation	0.2552752014761771
+/GUI/Results/Standard deviation|expanded	True
+
