@@ -1,4 +1,4 @@
-self,0
+self,2
 _autosettings_standard_items,['self']
 popped_tabs,[]
 

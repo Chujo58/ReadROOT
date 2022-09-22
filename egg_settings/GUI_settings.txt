@@ -6,7 +6,7 @@
 /GUI/Choose plot/MCS Graph	False
 /GUI/Choose plot/MCS Graph|expanded	True
 /GUI/Plot Settings|expanded	True
-/GUI/Plot Settings/Title	'CH1'
+/GUI/Plot Settings/Title	'EQ2611-Co60'
 /GUI/Plot Settings/Title|expanded	True
 /GUI/Plot Settings/Legend	True
 /GUI/Plot Settings/Legend|expanded	True
@@ -23,11 +23,11 @@
 /GUI/Plot Settings/Axes limits|expanded	True
 /GUI/Plot Settings/Axes limits/x min	0
 /GUI/Plot Settings/Axes limits/x min|expanded	True
-/GUI/Plot Settings/Axes limits/x max	10
+/GUI/Plot Settings/Axes limits/x max	2048
 /GUI/Plot Settings/Axes limits/x max|expanded	True
 /GUI/Plot Settings/Axes limits/y min	0
 /GUI/Plot Settings/Axes limits/y min|expanded	True
-/GUI/Plot Settings/Axes limits/y max	10
+/GUI/Plot Settings/Axes limits/y max	20000
 /GUI/Plot Settings/Axes limits/y max|expanded	True
 /GUI/Plot Settings/Log scale|expanded	True
 /GUI/Plot Settings/Log scale/x	False
@@ -35,25 +35,25 @@
 /GUI/Plot Settings/Log scale/y	False
 /GUI/Plot Settings/Log scale/y|expanded	True
 /GUI/Plot Settings/Line Color|expanded	True
-/GUI/Plot Settings/Line Color/Red	0
+/GUI/Plot Settings/Line Color/Red	50
 /GUI/Plot Settings/Line Color/Red|expanded	True
 /GUI/Plot Settings/Line Color/Green	0
 /GUI/Plot Settings/Line Color/Green|expanded	True
-/GUI/Plot Settings/Line Color/Blue	0
+/GUI/Plot Settings/Line Color/Blue	200
 /GUI/Plot Settings/Line Color/Blue|expanded	True
 /GUI/Plot Settings/Line Color/Alpha	100
 /GUI/Plot Settings/Line Color/Alpha|expanded	True
 /GUI/Plot Settings/Fill Color|expanded	True
-/GUI/Plot Settings/Fill Color/Red	0
+/GUI/Plot Settings/Fill Color/Red	68
 /GUI/Plot Settings/Fill Color/Red|expanded	True
-/GUI/Plot Settings/Fill Color/Green	7
+/GUI/Plot Settings/Fill Color/Green	0
 /GUI/Plot Settings/Fill Color/Green|expanded	True
-/GUI/Plot Settings/Fill Color/Blue	252
+/GUI/Plot Settings/Fill Color/Blue	250
 /GUI/Plot Settings/Fill Color/Blue|expanded	True
 /GUI/Plot Settings/Fill Color/Alpha	50
 /GUI/Plot Settings/Fill Color/Alpha|expanded	True
-/GUI/Plot Settings/Line Color/HEX CODE	'000000'
+/GUI/Plot Settings/Line Color/HEX CODE	'45f321'
 /GUI/Plot Settings/Line Color/HEX CODE|expanded	True
-/GUI/Plot Settings/Fill Color/HEX CODE	'0307fc'
+/GUI/Plot Settings/Fill Color/HEX CODE	'44f84f2'
 /GUI/Plot Settings/Fill Color/HEX CODE|expanded	True
 

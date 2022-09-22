@@ -1,7 +1,7 @@
 self.combo_binary,0
-self.combo_autoscript,1
+self.combo_autoscript,0
 self.button_enabled,True
-self.button_multi,True
+self.button_multi,False
 self.button_link_x,True
 self.button_script,True
 self.number_file,0
