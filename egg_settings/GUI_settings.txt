@@ -6,7 +6,7 @@
 /GUI/Choose plot/MCS Graph	False
 /GUI/Choose plot/MCS Graph|expanded	True
 /GUI/Plot Settings|expanded	True
-/GUI/Plot Settings/Title	'EQ2611-Co60'
+/GUI/Plot Settings/Title	'Energy Histogram'
 /GUI/Plot Settings/Title|expanded	True
 /GUI/Plot Settings/Legend	True
 /GUI/Plot Settings/Legend|expanded	True
@@ -16,9 +16,9 @@
 /GUI/Plot Settings/Grid/y	True
 /GUI/Plot Settings/Grid/y|expanded	True
 /GUI/Plot Settings/Axes label|expanded	True
-/GUI/Plot Settings/Axes label/x	'x'
+/GUI/Plot Settings/Axes label/x	'ADC bins'
 /GUI/Plot Settings/Axes label/x|expanded	True
-/GUI/Plot Settings/Axes label/y	'y'
+/GUI/Plot Settings/Axes label/y	'Counts'
 /GUI/Plot Settings/Axes label/y|expanded	True
 /GUI/Plot Settings/Axes limits|expanded	True
 /GUI/Plot Settings/Axes limits/x min	0
@@ -27,7 +27,7 @@
 /GUI/Plot Settings/Axes limits/x max|expanded	True
 /GUI/Plot Settings/Axes limits/y min	0
 /GUI/Plot Settings/Axes limits/y min|expanded	True
-/GUI/Plot Settings/Axes limits/y max	20000
+/GUI/Plot Settings/Axes limits/y max	5000
 /GUI/Plot Settings/Axes limits/y max|expanded	True
 /GUI/Plot Settings/Log scale|expanded	True
 /GUI/Plot Settings/Log scale/x	False
@@ -35,11 +35,11 @@
 /GUI/Plot Settings/Log scale/y	False
 /GUI/Plot Settings/Log scale/y|expanded	True
 /GUI/Plot Settings/Line Color|expanded	True
-/GUI/Plot Settings/Line Color/Red	50
+/GUI/Plot Settings/Line Color/Red	255
 /GUI/Plot Settings/Line Color/Red|expanded	True
 /GUI/Plot Settings/Line Color/Green	0
 /GUI/Plot Settings/Line Color/Green|expanded	True
-/GUI/Plot Settings/Line Color/Blue	200
+/GUI/Plot Settings/Line Color/Blue	0
 /GUI/Plot Settings/Line Color/Blue|expanded	True
 /GUI/Plot Settings/Line Color/Alpha	100
 /GUI/Plot Settings/Line Color/Alpha|expanded	True

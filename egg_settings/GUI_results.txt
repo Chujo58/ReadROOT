@@ -4,10 +4,10 @@
 /GUI/Range for calculation/Maximum	172.0
 /GUI/Range for calculation/Maximum|expanded	True
 /GUI/Results|expanded	True
-/GUI/Results/Average	157.49230977853588
+/GUI/Results/Average	0.050678160919540235
 /GUI/Results/Average|expanded	True
-/GUI/Results/Median	158.0
+/GUI/Results/Median	0.0
 /GUI/Results/Median|expanded	True
-/GUI/Results/Standard deviation	7.641530118259981
+/GUI/Results/Standard deviation	0.9576712334819101
 /GUI/Results/Standard deviation|expanded	True
 
