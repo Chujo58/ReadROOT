@@ -48,25 +48,32 @@ class GUI(_root_reader):
         
         self.window = _g.Window(name, size=[window_width, window_height], autosettings_path=name+'_window.txt')
         self.window._window
-        self.grid_top = self.window.place_object(_g.GridLayout(False))
+        self.grid_top = self.window.place_object(_g.GridLayout(False)).set_height(50*self.ratio)
         self.window.new_autorow()
         self.grid_bot = self.window.place_object(_g.GridLayout(False), alignment=0)
         self.grid_top.set_column_stretch(1,1)
 
         #Buttons
-        self.button_folder = self.grid_top.place_object(_g.Button('Search folder'))
-        self.button_transform = self.grid_top.place_object(_g.Button('Transform selected file'))
-        self.folder_label = self.grid_top.place_object(_g.Label('No folder selected'))
+        self.button_folder = self.grid_top.place_object(_g.Button('Search\nfolder')).set_width(50*self.ratio).set_height(45*self.ratio)
+        #self.button_transform = self.grid_top.place_object(_g.Button('Transform selected file'))
+        #self.folder_label = self.grid_top.place_object(_g.Label('No folder selected'))
+
+        #File settings tab
+        self.file_settings = self.grid_top.place_object(_g.TreeDictionary(name+'_file_settings.txt', name), alignment=0).set_width(245*self.ratio).set_height(40*self.ratio)
+
+        self.file_settings.add_parameter(key='Files Settings/Folder', type='list', values=['FILTERED', 'UNFILTERED', 'RAW'])
+        self.file_settings.connect_signal_changed('Files Settings/Folder', self.__settings_folder_changed__)
+
         self.file_label = self.grid_top.place_object(_g.Label('No file selected'))
 
         self.button_folder.signal_clicked.connect(self.__search_folder__)
-        self.button_transform.signal_clicked.connect(self.__transform__)
+        #self.button_transform.signal_clicked.connect(self.__transform__)
 
         #Channels button
-        self.ch0 = self.grid_top.place_object(_g.Button('CH0', True).set_width(50*self.ratio))
-        self.ch1 = self.grid_top.place_object(_g.Button('CH1', True).set_width(50*self.ratio))
-        self.ch2 = self.grid_top.place_object(_g.Button('CH2', True).set_width(50*self.ratio))
-        self.ch3 = self.grid_top.place_object(_g.Button('CH3', True).set_width(50*self.ratio))
+        self.ch0 = self.grid_top.place_object(_g.Button('CH0', True).set_width(50*self.ratio)).set_height(45*self.ratio)
+        self.ch1 = self.grid_top.place_object(_g.Button('CH1', True).set_width(50*self.ratio)).set_height(45*self.ratio)
+        self.ch2 = self.grid_top.place_object(_g.Button('CH2', True).set_width(50*self.ratio)).set_height(45*self.ratio)
+        self.ch3 = self.grid_top.place_object(_g.Button('CH3', True).set_width(50*self.ratio)).set_height(45*self.ratio)
 
         self.ch0.signal_toggled.connect(self.__channel_buttons__)
         self.ch1.signal_toggled.connect(self.__channel_buttons__)
@@ -74,27 +81,22 @@ class GUI(_root_reader):
         self.ch3.signal_toggled.connect(self.__channel_buttons__)
 
         #Plot button
-        self.plot = self.grid_top.place_object(_g.Button('Plot').set_width(55*self.ratio))
+        self.plot = self.grid_top.place_object(_g.Button('Plot').set_width(55*self.ratio)).set_height(45*self.ratio)
         self.plot.signal_clicked.connect(self.__plot__)
         #Clear button
-        self.clear = self.grid_top.place_object(_g.Button('Clear').set_width(55*self.ratio))
+        self.clear = self.grid_top.place_object(_g.Button('Clear').set_width(55*self.ratio)).set_height(45*self.ratio)
         self.clear.signal_clicked.connect(self.__clear__)
         #Save plot button
-        self.save = self.grid_top.place_object(_g.Button('Save Plot Image'))#.set_width(90*self.ratio)
+        self.save = self.grid_top.place_object(_g.Button('Save Plot Image')).set_width(90*self.ratio).set_height(45*self.ratio)
         self.save.signal_clicked.connect(self.__save_image__)
 
-        self.calculate = self.grid_top.place_object(_g.Button('Calculate Results'))
+        self.calculate = self.grid_top.place_object(_g.Button('Calculate Results')).set_height(45*self.ratio)
         self.calculate.signal_clicked.connect(self.__calculate__)
         
         #Tab Area for the plotting settings and the file transformation settings
-        self.TabArea = self.grid_bot.place_object(_g.TabArea(name+'_tabs_settings.txt'), 0, 0, alignment=0).set_width(300*self.ratio)
+        self.TabArea = self.grid_bot.place_object(_g.TabArea(name+'_tabs_settings.txt'), alignment=0).set_width(300*self.ratio)
 
-        #File settings tab
-        self.TabFileSettings = self.TabArea.add_tab('File Settings')
-        self.file_settings = self.TabFileSettings.place_object(_g.TreeDictionary(name+'_file_settings.txt', name), 0, 0, alignment=0).set_width(275*self.ratio)
-
-        self.file_settings.add_parameter(key='Files Settings/Folder', type='list', values=['FILTERED', 'UNFILTERED', 'RAW'])
-        self.file_settings.connect_signal_changed('Files Settings/Folder', self.__settings_folder_changed__)
+        
 
         #Plot settings tab
         self.TabSettings = self.TabArea.add_tab('Plot Settings')
@@ -219,7 +221,7 @@ class GUI(_root_reader):
         
         #Set the default tab opened to the file settings tab:
         self.TabArea.set_current_tab(0)
-        self.filesetlabel = self.TabFileSettings.place_object(_g.Label('Select a folder please.'))
+        #self.filesetlabel = self.TabFileSettings.place_object(_g.Label('Select a folder please.'))
 
         self.__linecolor__()#Loads the line color for the first time.
         self.__fillcolor__()#Loads the fill color for the first time.
@@ -577,16 +579,21 @@ class GUI(_root_reader):
         folder_path = _fd.askdirectory(initialdir='/')
         path = _os.path.realpath(folder_path)
         folder_name = path.split('\\')[-1]
-        self.folder_label.set_text(folder_name)
-        self.filesetlabel.set_text('')
+        #self.folder_label.set_text(folder_name)
+        #self.filesetlabel.set_text('')
         self.folder_path = path
         
         self.__settings_folder_changed__()#Loads the files for the first time.
         
 
     def __getfiles__(self, folder_path):
-        foldernames = _os.listdir(folder_path)
-        return foldernames
+        allfiles = _os.listdir(folder_path)
+        root_files = []
+        for file in allfiles:
+            if file.endswith(".root"):
+                root_files.append(file)
+
+        return root_files
         
     def __settings_folder_changed__(self, *a):
         """
