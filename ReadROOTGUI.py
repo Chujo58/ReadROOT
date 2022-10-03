@@ -37,6 +37,62 @@ class GUI(_root_reader):
         self.folder_containing_root =''
         self.filepath1 = ''
         self.filepath2 = ''
+        self.xml_parameters = {"INPUT":{"Enable":"SRV_PARAM_CH_ENABLED",
+                                        "Record length":"SRV_PARAM_RECLEN",
+                                        "Pre-trigger":"SRV_PARAM_CH_PRETRG",
+                                        "Polarity":"SRV_PARAM_CH_POLARITY",
+                                        "N samples baseline":"SRV_PARAM_CH_BLINE_NSMEAN",
+                                        "Fixed baseline value":"SRV_PARAM_CH_BLINE_FIXED",
+                                        "DC Offset":"SRV_PARAM_CH_BLINE_DCOFFSET",
+                                        "Calibrate ADC":"SRV_PARAM_ADCCALIB_ONSTART_ENABLE",
+                                        "Input dynamic":"SRV_PARAM_CH_INDYN",
+                                        "Analog Traces Fin Resolution":"SRV_PARAM_ANALOGTR_FINERES_ENABLE"},
+                                "DISCRIMINATOR":{"Discriminator mode":"SRV_PARAM_CH_DISCR_MODE",
+                                                 "Threshold":"SRV_PARAM_CH_THRESHOLD",
+                                                 "Trigger holdoff":"SRV_PARAM_CH_TRG_HOLDOFF",
+                                                 "CFD delay":"SRV_PARAM_CH_CFD_DELAY",
+                                                 "CFD fraction":"SRV_PARAM_CH_CFD_FRACTION"},
+                                "QDC":{"Energy coarse gain":"SRV_PARAM_CH_ENERGY_COARSE_GAIN",
+                                       "Gate":"SRV_PARAM_CH_GATE",
+                                       "Short gate":"SRV_PARAM_CH_GATESHORT",
+                                       "Pre-gate":"SRV_PARAM_CH_GATEPRE",
+                                       "Charge pedestal":"SRV_PARAM_CH_PEDESTAL_EN"},
+                                "SPECTRA":{"Energy N channels":"SRV_PARAM_CH_SPECTRUM_NBINS",
+                                           "PSD N channels":"SW_PARAMETER_PSDBINCOUNT",
+                                           "Time intervals N channels":"SW_PARAMETER_DISTRIBUTION_BINCOUNT",
+                                           "Time intervals Tmin":"SW_PARAMETER_TIME_DISTRIBUTION_CH_T0",
+                                           "Time intervals Tmax":"SW_PARAMETER_TIME_DISTRIBUTION_CH_T1",
+                                           "Start/stop Δt N channels":"SW_PARAMETER_DIFFERENCE_BINCOUNT",
+                                           "Start/stop Δt Tmin":"SW_PARAMETER_TIME_DIFFERENCE_CH_T0",
+                                           "Start/stop Δt Tmax":"SW_PARAMETER_TIME_DIFFERENCE_CH_T1",
+                                           "2D Energy N channels":"SW_PARAMETER_E2D_BINCOUNT",
+                                           "2D PSD N channels":"SW_PARAMETER_PSD2D_BINCOUNT",
+                                           "2D Δt N channels":"SW_PARAMETER_TOF2D_BINCOUNT"},
+                                "REJECTIONS":{"Saturation rejection":"SW_PARAM_CH_SATURATION_REJECTION_ENABLE",
+                                              "Pileup rejection":"SW_PARAM_CH_PUR_ENABLE",
+                                              "E low cut":"SW_PARAMETER_CH_ENERGYLOWCUT",
+                                              "E high cut":"SW_PARAMETER_CH_ENERGYHIGHCUT",
+                                              "E cut enable":"SW_PARAMETER_CH_ENERGYCUTENABLE",
+                                              "PSD low cut":"SW_PARAMETER_CH_PSDLOWCUT",
+                                              "PSD high cut":"SW_PARAMETER_CH_PSDHIGHCUT",
+                                              "PSD cut enable":"SW_PARAMETER_CH_PSDCUTENABLE",
+                                              "Time intervals low cut":"SW_PARAMETER_CH_TIMELOWCUT",
+                                              "Time intervals high cut":"SW_PARAMETER_CH_TIMEHIGHCUT",
+                                              "Time intervals cut enable":"SW_PARAMETER_CH_TIMECUTENABLE"},
+                                "ENERGY CALIBRATION":{"C0":"SW_PARAMETER_CH_ENERGY_CALIBRATION_P0",
+                                                      "C1":"SW_PARAMETER_CH_ENERGY_CALIBRATION_P1",
+                                                      "C2":"SW_PARAMETER_CH_ENERGY_CALIBRATION_P2",
+                                                      "Calibration units":"SW_PARAMETER_CH_ENERGY_CALIBRATION_UDM"},
+                                "SYNC":{"External clock source":"SRV_PARAM_DT_EXT_CLOCK",
+                                        "Start mode":"SRV_PARAM_START_MODE",
+                                        "TRG OUT/GPO mode":"SRV_PARAM_TRGOUT_MODE",
+                                        "Start delay":"SRV_PARAM_START_DELAY",
+                                        "Channel time offset":"SRV_PARAM_CH_TIME_OFFSET"},
+                                "ONBOARD COINCIDENCES":{"Coincidence Mode":"SRV_PARAM_COINC_MODE",
+                                                        "Coincidence window":"SRV_PARAM_COINC_TRGOUT"},
+                                "MISC":{"Label":"SW_PARAMETER_CH_LABEL",
+                                        "FPIO type":"SRV_PARAM_IOLEVEL",
+                                        "Rate optimization":"SRV_PARAM_EVENTAGGR"}}
 
         screen_width, screen_height = self.__get_screen_resolution__()
         window_width = int(window_size[0]/1680*screen_width)
@@ -93,10 +149,16 @@ class GUI(_root_reader):
         self.calculate = self.grid_top.place_object(_g.Button('Calculate Results')).set_height(45*self.ratio)
         self.calculate.signal_clicked.connect(self.__calculate__)
         
-        #Tab Area for the plotting settings and the file transformation settings
-        self.TabArea = self.grid_bot.place_object(_g.TabArea(name+'_tabs_settings.txt'), alignment=0).set_width(300*self.ratio)
+        #General tab area containing the graph and COMPASS sections
+        self.GeneralTabArea = self.grid_bot.place_object(_g.TabArea(name+'_gen_tabs_settings.txt'), alignment=0)
+        self.COMPASS = self.GeneralTabArea.add_tab('COMPASS')
+        self.GRAPH = self.GeneralTabArea.add_tab('GRAPH')
 
+        #COMPASS
         
+
+        #Tab Area for the plotting settings and the file transformation settings
+        self.TabArea = self.GRAPH.place_object(_g.TabArea(name+'_tabs_settings.txt'), alignment=0).set_width(300*self.ratio)
 
         #Plot settings tab
         self.TabSettings = self.TabArea.add_tab('Plot Settings')
@@ -197,7 +259,7 @@ class GUI(_root_reader):
         self.settings.connect_signal_changed('Plot Settings/Fill Color/HEX CODE', self.__hexfill__)
 
         #Graph Area
-        self.TabAreaData = self.grid_bot.place_object(_g.TabArea(name+'_tabs_data.txt'), 1, 0, alignment=0)#.set_width(700*self.ratio)
+        self.TabAreaData = self.GRAPH.place_object(_g.TabArea(name+'_tabs_data.txt'), 1, 0, alignment=0)#.set_width(700*self.ratio)
         self.TabData = self.TabAreaData.add_tab('Data')
         self.data = self.TabData.place_object(_g.DataboxSaveLoad(file_type='.txt', autosettings_path=name+'_data.txt'), alignment=0).set_width(700*self.ratio)
         self.data.enable_save()
@@ -582,6 +644,12 @@ class GUI(_root_reader):
         #self.folder_label.set_text(folder_name)
         #self.filesetlabel.set_text('')
         self.folder_path = path
+        allfiles = _os.listdir(path)
+        for file in allfiles:
+            if file.endswith(".xml"):
+                self.compass_settings = file
+            if file.endswith(".info"):
+                self.run_info = file
         
         self.__settings_folder_changed__()#Loads the files for the first time.
         

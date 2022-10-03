@@ -24,6 +24,9 @@ class XMLParser:
         for entry in board_parameters:
             value = entry.find('value/value').text
             group = entry.find('value/descriptor/group').text
+            units = entry.find('value/descriptor/udm').text
+            if units == "NANOS":
+                units = "ns"
             for tab in self.groups:
                 if group == tab:
                     self.parameters[tab][key] = value
