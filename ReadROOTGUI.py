@@ -44,6 +44,8 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+running_from_main = False
+
 class GUI(_root_reader):
     def __init__(self, name='GUI', window_size=[1000,500], show=True, block=True):
         self.name = name
@@ -182,6 +184,16 @@ class GUI(_root_reader):
                                      "Start-stop Δt Tmax":'s'},
                           "ONBOARD COINCIDENCES":{"Coincidence window":'s'}}
 
+        if not running_from_main:
+            module_list = ['cppimport', 'pybind11', 'uproot', 'pyqtgraph', 'darkdetect', 'numpy', 'pandas','PyQt5']
+            print(bcolors.WARNING + "Please make sure that the following modules are installed on your machine." + bcolors.ENDC)
+            for module in module_list:
+                if module != module_list[-1]:
+                    print(module, end=', ')
+                else:
+                    print(module)
+            print(bcolors.WARNING + "Also note that you can use raw ROOT files directly to calculate the TOF." + bcolors.ENDC)
+ 
         screen_width, screen_height = self.__get_screen_resolution__()
         window_width = int(window_size[0]/1680*screen_width)
         window_height = int(window_size[1]/1050*screen_height)
@@ -261,9 +273,13 @@ class GUI(_root_reader):
         
         #General tab area containing the graph and COMPASS sections
         self.GeneralTabArea = self.grid_bot.place_object(_g.TabArea(name+'_gen_tabs_settings.txt'), alignment=0)
-        self.COMPASS = self.GeneralTabArea.add_tab('COMPASS')
+        self.COMPASS = self.GeneralTabArea.add_tab('CoMPASS')
         self.GRAPH = self.GeneralTabArea.add_tab('GRAPH')
 
+        comp_icon = QtGui.QIcon('Images/CoMPASS/icon64x64.ico')
+        graph_icon = QtGui.QIcon('Images/CoMPASS/OpenGraph.png')
+        self.GeneralTabArea._widget.setTabIcon(0, comp_icon)
+        self.GeneralTabArea._widget.setTabIcon(1, graph_icon)
 
 
         #COMPASS
@@ -297,7 +313,7 @@ class GUI(_root_reader):
         self.board_3.add_parameter(key="DPP type", value=" ", readonly=True)
         self.board_3.add_parameter(key="Enable", value=False, readonly=True)
 
-        #CoMPASS Icons
+        #CoMPASS Icons/Icons for the settings tree dictionary.
         input_icon = QtGui.QIcon('Images/CoMPASS/Input.png')
         disc_icon = QtGui.QIcon('Images/CoMPASS/Discriminator.png')
         qdc_icon = QtGui.QIcon('Images/CoMPASS/QDC.png')
@@ -465,32 +481,6 @@ class GUI(_root_reader):
         self.TabSettings = self.TabArea.add_tab('Plot Settings')
         self.settings = self.TabSettings.place_object(_g.TreeDictionary(name+'_settings.txt', name), 0, 0, alignment=0).set_width(275*self.ratio)
 
-        #Specific Graph settings
-        # self.GraphSettingsTab = self.TabArea.add_tab('Graph Settings')
-        # self.graphsettings = self.GraphSettingsTab.place_object(_g.TreeDictionary(name+'_graph_settings.txt', name), 0, 0, alignment=0).set_width(275*self.ratio)
-        # self.graphsettings.add_parameter(key='Energy Histogram/Energy bins', value = 4096, values=[256, 512, 1024, 2048, 4096, 8192, 16384], suffix='channels', siPrefix=True, tip='How many bins are used for the energy histogram.')
-        # self.graphsettings.add_parameter(key='Energy Histogram/File selected', value='No file selected', tip='Path of the selected file', readonly=True)
-        # self.graphsettings.add_parameter(key='Energy Histogram/File name', value='No file selected', tip='Name of the selected file', readonly=True)
-
-        # self.graphsettings.add_parameter(key='TOF Histogram/ΔT min', value=-1000, default=-1000, step=1, suffix='ns', siPrefix=True, tip='Smallest value counted for the bins.')
-        # self.graphsettings.add_parameter(key='TOF Histogram/ΔT max', value=1000, default=1000, step=1, suffix='ns', siPrefix=True, tip='Biggest value counted for the bins.')
-        # self.graphsettings.add_parameter(key='TOF Histogram/ΔT bins', value=8192, values=[256, 512, 1024, 2048, 4096, 8192], default=8192, suffix='channels', siPrefix=True, tip='How many bins are used for the TOF histogram.')
-        # self.graphsettings.add_parameter(key='TOF Histogram/File #1', value='No file selected', tip='Start channel path', readonly=True)
-        # self.graphsettings.add_parameter(key='TOF Histogram/File #2', value='No file selected', tip='Stop channel path', readonly=True)
-        # self.graphsettings.add_parameter(key='TOF Histogram/File name #1', value='No file selected', tip='Start channel', readonly=True)
-        # self.graphsettings.add_parameter(key='TOF Histogram/File name #2', value='No file selected', tip='Stop channel', readonly=True)
-        
-        # self.graphsettings.add_parameter(key='MCS Graph/File selected', value='No file selected', tip='Path of the selected file', readonly=True)
-        # self.graphsettings.add_parameter(key='MCS Graph/File name', value='No file selected', tip='Name of the selected file', readonly=True)
-
-        #Graph type       
-        #self.settings.add_parameter(key='Choose plot/Energy Histogram', value=False)
-        #self.settings.connect_signal_changed('Choose plot/Energy Histogram', self.__change_graph__)
-        #self.settings.add_parameter(key='Choose plot/TOF Histogram', value=False)
-        #self.settings.connect_signal_changed('Choose plot/TOF Histogram', self.__change_graph__)
-        #self.settings.add_parameter(key='Choose plot/MCS Graph', value=False)        
-        #self.settings.connect_signal_changed('Choose plot/MCS Graph', self.__change_graph__)
-
         #Title
         self.settings.add_parameter(key='Plot Settings/Title', value='Graph title', tip='Title of the graph')
         self.settings.connect_signal_changed('Plot Settings/Title', self.__title__)
@@ -619,7 +609,7 @@ class GUI(_root_reader):
 
 
         
-        #Set the default tab opened to the file settings tab:
+        #Set the default tab opened to the CoMPASS settings tab:
         self.GeneralTabArea.set_current_tab(0)
         self.TabArea.set_current_tab(0)
         #self.filesetlabel = self.TabFileSettings.place_object(_g.Label('Select a folder please.'))
@@ -1278,4 +1268,5 @@ if __name__ == '__main__':
             print(module)
     print(bcolors.WARNING + "Also note that you can use raw ROOT files directly to calculate the TOF." + bcolors.ENDC)
     time.sleep(5)
+    running_from_main = True
     self = GUI()
