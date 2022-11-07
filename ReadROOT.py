@@ -51,6 +51,17 @@ class _root_reader():
         """
         return _np.std(data_set)
 
+    @staticmethod
+    def PSD(energylong, energyshort):
+        """
+        Tries to calculate the PSD value for given E_long and E_short. If E_long is zero, the PSD value will be set to 0.
+        """
+        try:
+            value = (energylong-energyshort)/energylong
+        except:
+            value = 0
+        return value
+
 
     def __getdata__(self, filepath:str, tree='Data_F'):
         """
@@ -66,7 +77,7 @@ class _root_reader():
         """
         root_file = _ur.open(filepath)
         tree = root_file[tree]
-        keys = ['Channel', 'Timestamp', 'Board', 'Energy', 'Flags']
+        keys = ['Channel', 'Timestamp', 'Board', 'Energy', 'EnergyShort']
         filtered_data = tree.arrays(keys, library='np')
         
         filtered_DF = _pd.DataFrame(filtered_data)
@@ -96,6 +107,32 @@ class _root_reader():
         y = hist[0]
         return (x, y, data['Energy'])
 
+    def __psdhist__(self, filepath, default_bins=4096, tree='Data_F'):
+        data = self.__getdata__(filepath, tree)
+        psd_func = _np.vectorize(self.PSD)
+        PSD_values = psd_func(data['Energy'], data['EnergyShort'])
+        data.insert(2, 'PSD', PSD_values)
+        hist = _np.histogram(data['PSD'], bins=default_bins, range=(0,1))
+        x = hist[1][1:]
+        y = hist[0]
+        return (x, y, data['PSD'])
+        
+    def __timehist__(self, filepath, min_bin, max_bin, default_bins=4096, default_bin_size = 0.045, tree='Data_F'):
+        data = self.__getdata__(filepath, tree)
+        time_difference = _np.ediff1d(data['Timestamp']/1000)
+
+        bin_range = max_bin - min_bin
+        bin_size = round(bin_range/default_bins, 3)
+        if bin_size < default_bin_size:
+            max_bin = min_bin + default_bins * default_bin_size
+            bin_size = default_bin_size
+            bin_range = max_bin - min_bin
+
+        hist = _np.histogram(time_difference, bins=default_bins, range=(min_bin, max_bin))
+        x = hist[1][1:]
+        y = hist[0]
+        return (x, y, time_difference)
+
     def __tofhist__(self, file1, file2, min_bin, max_bin, default_bins=8192, default_bin_size = 0.045, tree='Data_F'):
         """
         Computes the counts for the different time difference bins.
@@ -123,12 +160,8 @@ class _root_reader():
 
         #Data from the first file path.
         ch0_data = self.__getdata__(file1, tree)
-        #ch0_data = self.__getdata__(self.file_path)
-        #Second file path
-        ch1_data = self.__getdata__(file2, tree)
-        #ch1_root_file = _fd.askopenfilename(initialdir=self.def_dir, title='Select a file', filetypes=(('ROOT file', '*.root'), ('All files', '*.*')))
         #Data from the second file path
-        #ch1_data = self.__getdata__(ch1_root_file)
+        ch1_data = self.__getdata__(file2, tree)
 
         #Calculation of the ΔT
         delta_time = []
@@ -263,5 +296,8 @@ class RootPlotter(_root_reader):
         _plt.ylabel(y_label)
         if self.show:    _plt.show()
 
-#test = RootPlotter(True, True, True)
-#test.PlotEnergyHistogram()
+if __name__ == '__main__':
+    test = _root_reader()
+    data = test.__psdhist__("C:\\Users\\clegue4\\OneDrive - McGill University\\Coincidence Testing\\Voltage Bias Setup\\DAQ\\Ba133-EQ2611-1000V\\RAW\\DataR_CH0@DT5751_1989_Ba133-EQ2611-1000V.root", 0, 1000, tree='Data_R')
+    _plt.plot(data[0], data[1], drawstyle='steps-mid')
+    _plt.show()
