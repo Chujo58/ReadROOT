@@ -4,6 +4,8 @@ import uproot as _ur
 import pandas as _pd
 import tkinter.filedialog as _fd
 from scipy.optimize import curve_fit
+import cppimport
+funcs = cppimport.imp("wrap")
 #from scipy import asarray as ar,exp
 
 
@@ -62,8 +64,19 @@ class _root_reader():
             value = 0
         return value
 
+    @staticmethod
+    def get_unfiltered(data_raw):
+        indexes = _np.where(data['Flags'] == 16384)[0]
+        temp_dict = {}
+        for key in data.keys():
+            temp_dict[key] = data[key][indexes]
+        return pd.DataFrame(temp_dict)
 
-    def __getdata__(self, filepath:str, tree='Data_F'):
+    @staticmethod
+    def data_in_range(data_unfiltered, start, stop):
+        return _np.where((start <= data_unfiltered) & (data_unfiltered <= stop))
+
+    def __getdata__(self, filepath:str, tree='Data_F', raw=False):
         """
         Reads the data from the file selected and returns it into a readable format.
 
@@ -81,10 +94,11 @@ class _root_reader():
         filtered_data = tree.arrays(keys, library='np')
         
         filtered_DF = _pd.DataFrame(filtered_data)
-        timestamps = filtered_DF['Timestamp']
-        formatted_timestamps = _pd.to_numeric(timestamps, downcast='integer')
-        filtered_DF = filtered_DF.drop('Timestamp', axis=1)
-        filtered_DF.insert(1, 'Timestamp', formatted_timestamps)
+        if raw:
+            timestamps = filtered_DF['Timestamp']
+            formatted_timestamps = _pd.to_numeric(timestamps, downcast='integer')
+            filtered_DF = filtered_DF.drop('Timestamp', axis=1)
+            filtered_DF.insert(1, 'Timestamp', formatted_timestamps)
         return filtered_DF
 
     def __energyhist__(self, filepath, default_bins=4096, tree='Data_F'):
@@ -181,6 +195,32 @@ class _root_reader():
         x = hist[1]#[1:]
         y = hist[0]
         return (x, y, delta_time)
+
+    def __CPPTOF__(self, file1, file2, low_cut_0, high_cut_0, low_cut_1, high_cut_1, window, min_bin, max_bin, default_bins=8192, default_bin_size=0.045, tree="Data_R"):
+        ch0_data = self.__getdata__(file1, tree, True)
+        ch1_data = self.__getdata__(file2, tree, True)
+
+        ch0_unfiltered = self.get_unfiltered(ch0_data)
+        ch1_unfiltered = self.get_unfiltered(ch1_data)
+
+        first_line = ch0_unfiltered['Timestamp'][self.data_in_range(ch0_unfiltered['Energy'], low_cut_0, high_cut_0)]
+        second_line = ch1_unfiltered['Timestamp'][self.data_in_range(ch1_unfiltered['Energy'], low_cut_1, high_cut_1)]
+
+        start, stop = funcs.TOF(first_line, second_line, window)
+
+        bin_range = max_bin - min_bin
+        bin_size = round(bin_range/default_bins, 3)
+        if bin_size < default_bin_size:
+            max_bin = min_bin + default_bins * default_bin_size
+            bin_size = default_bin_size
+            bin_range = max_bin - min_bin
+
+        diffs = (stop-start)*10**(-3)
+        hist = _np.histogram(diffs, bins=default_bins, range=(min_bin, max_bin))
+        x = hist[1]
+        y = hist[0]
+        return (x, y, diffs)        
+
 
     def __MCSgraph__(self, filepath, tree='Data_F'):
         """
