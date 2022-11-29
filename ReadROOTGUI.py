@@ -30,6 +30,10 @@ import darkdetect as _dd
 import re as _re
 from PyQt5 import QtGui, QtWidgets
 import time
+from scipy.optimize import curve_fit as _cf
+from ErrorPropagation import UFloat as _uf
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib import cm
 
 _g = _egg.gui
 
@@ -46,8 +50,67 @@ class bcolors:
 
 running_from_main = False
 
+def gaussian(x, centroid, sigma, amplitude):
+    return amplitude*_np.exp(-(x-centroid)**2/(2*sigma**2))
+
+def fit(x: float, center: float, spread: float, log_amp: float) -> float:
+    """
+    Function used for the `scipy.optimize.curve_fit`.
+
+    Args:
+        x (float): Data used for the fit.
+        center (float): Center of the gaussian.
+        spread (float): Spread of the gaussian.
+        log_amp (float): Natural logarithm of the amplitude of the gaussian.
+
+    Returns:
+        float: Value after going through the fit.
+    """
+    return (2*log_amp*spread**2-(x-center)**2)/(2*spread**2)
+
+def complementary(color: tuple) -> tuple:
+    r,g,b,a = color
+    return (255-r,255-g,255-b,a)
+
+def FWAP(x_data, center: _uf, spread: _uf, amp: _uf, percent: float):
+    y_data = gaussian(x_data, center._value, spread._value, amp._value)
+    half_max = percent*max(y_data)
+    x_1 = center-(spread**2*(-2)*(amp**(-1)*half_max).evalf(_np.log)).evalf(_np.sqrt)
+    x_2 = center+(spread**2*(-2)*(amp**(-1)*half_max).evalf(_np.log)).evalf(_np.sqrt)
+    return x_2-x_1
+
+
+def chi_sqr(expected, obtained):
+    if len(expected) != len(obtained):
+        raise ValueError("Both arrays should have the same size for the calculation of χ2.")
+    else:
+        sum = 0
+        for i in range(0, len(expected)):
+            sum += (obtained[i]-expected[i])**2/expected[i]
+    return sum
+
+white_turbo_list = [
+    (0, '#ffffff'),
+    (1e-20, '#30123b'),
+    (0.1, '#4458cb'),
+    (0.2, '#3e9bfe'),
+    (0.4, '#46f783'),
+    (0.5, '#a4fc3b'),
+    (0.6, '#e1dc37'),
+    (0.7, '#fda330'),
+    (0.8, '#ef5a11'),
+    (0.9, '#c32402'),
+    (1, '#311542')
+]
+
+white_turbo = LinearSegmentedColormap.from_list('white_turbo', white_turbo_list, N=256)
+
+cm.register_cmap('white_turbo', white_turbo)
+
+
 class GUI(_root_reader):
     def __init__(self, name='GUI', window_size=[1000,500], show=True, block=True):
+        self.PSDvsE_BEFORE = False
         self.name = name
         self.folder_path = ''
         self.folder_containing_root =''
@@ -185,7 +248,7 @@ class GUI(_root_reader):
                           "ONBOARD COINCIDENCES":{"Coincidence window":'s'}}
 
         if not running_from_main:
-            module_list = ['cppimport', 'pybind11', 'uproot', 'pyqtgraph', 'darkdetect', 'numpy', 'pandas','PyQt5']
+            module_list = ['cppimport', 'pybind11', 'uproot', 'pyqtgraph=0.12.4', 'darkdetect', 'numpy', 'pandas','PyQt5']
             print(bcolors.WARNING + "Please make sure that the following modules are installed on your machine." + bcolors.ENDC)
             for module in module_list:
                 if module != module_list[-1]:
@@ -267,6 +330,11 @@ class GUI(_root_reader):
         self.save.set_style_unchecked(style='image: url(Images/SaveImage.png)')
         self.save.signal_clicked.connect(self.__save_image__)
 
+        self.select = self.grid_top.place_object(_g.Button(' ', tip='Select ROI',checkable=True)).set_width(45*self.ratio).set_height(45*self.ratio)
+        self.select.set_style_unchecked(style='image: url(Images/SelectROI.png)')
+        self.select.set_style_checked(style='image: url(Images/SelectROIOn.png)')
+        self.select.signal_toggled.connect(self.__select_ROI__)
+
         self.calculate = self.grid_top.place_object(_g.Button(' ', tip='Calculate Results')).set_width(45*self.ratio).set_height(45*self.ratio)
         self.calculate.set_style_unchecked(style='image: url(Images/Calculate.png)')
         self.calculate.signal_clicked.connect(self.__calculate__)
@@ -283,7 +351,7 @@ class GUI(_root_reader):
 
 
         #COMPASS
-        self.run_info = self.COMPASS.place_object(_g.TreeDictionary(), alignment=0).set_height(80*self.ratio)
+        self.run_info = self.COMPASS.place_object(_g.TreeDictionary(), alignment=0).set_height(85*self.ratio)
         self.run_info.add_parameter(key="Run ID", value=" ", readonly=True, tip="Run ID name set in CoMPASS/Folder name in which files are saved.")
         self.run_info.add_parameter(key="Start Time", value=" ", readonly=True, tip="Time at which the acquisition started.")
         self.run_info.add_parameter(key="Stop Time", value=" ", readonly=True, tip="Time at which the acquisition stopped.")
@@ -292,9 +360,9 @@ class GUI(_root_reader):
         self.COMPASS.new_autorow()
         self.BOARD = self.COMPASS.place_object(_g.TabArea(), alignment=0)
         self.board_properties = self.BOARD.add_tab('Board Properties')
-        self.board_1 = self.board_properties.place_object(_g.TreeDictionary(), alignment=0).set_height(80*self.ratio)
-        self.board_2 = self.board_properties.place_object(_g.TreeDictionary(), alignment=0).set_height(80*self.ratio)
-        self.board_3 = self.board_properties.place_object(_g.TreeDictionary(), alignment=0).set_height(80*self.ratio)
+        self.board_1 = self.board_properties.place_object(_g.TreeDictionary(), alignment=0).set_height(85*self.ratio)
+        self.board_2 = self.board_properties.place_object(_g.TreeDictionary(), alignment=0).set_height(85*self.ratio)
+        self.board_3 = self.board_properties.place_object(_g.TreeDictionary(), alignment=0).set_height(85*self.ratio)
         
         self.board_properties.new_autorow()
         self.COMPASS_settings = self.board_properties.place_object(_g.TabArea(), alignment=0, column_span=3)
@@ -356,27 +424,56 @@ class GUI(_root_reader):
         self.input_ch = self.INPUT.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
         self.input_ch.add_parameter(key="Channel", type='list', values=['BOARD','CH0','CH1','CH2','CH3'])
         self.INPUT.new_autorow()
-        self.input_tree = self.INPUT.place_object(_g.TreeDictionary(), alignment=0)#.set_width(300*self.ratio)
-        #self.input_table = self.INPUT.place_object(_g.Table(1,len(list(self.xml_parameters['INPUT'].keys()))), alignment=0)
+        self.input_tree = self.INPUT.place_object(_g.TreeDictionary(), alignment=0)
+        self.input_ch.connect_signal_changed('Channel', self.__reload_channels__)
 
-        self.DISCRIMINATOR.place_object(_g.Label('BOARD'))
+        self.disc_ch = self.DISCRIMINATOR.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
+        self.disc_ch.add_parameter(key="Channel", type='list', values=['BOARD','CH0','CH1','CH2','CH3'])
         self.DISCRIMINATOR.new_autorow()
-        self.disc_tree = self.DISCRIMINATOR.place_object(_g.TreeDictionary(), alignment=0)#.set_width(300*self.ratio)
-        #self.disc_table = self.DISCRIMINATOR.place_object(_g.Table(1,len(list(self.xml_parameters['DISCRIMINATOR'].keys()))), alignment=0)
+        self.disc_tree = self.DISCRIMINATOR.place_object(_g.TreeDictionary(), alignment=0)
+        self.disc_ch.connect_signal_changed('Channel', self.__reload_channels__)
 
+        self.qdc_ch = self.QDC.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
+        self.qdc_ch.add_parameter(key="Channel", type='list', values=['BOARD','CH0','CH1','CH2','CH3'])
+        self.QDC.new_autorow()
         self.qdc_tree = self.QDC.place_object(_g.TreeDictionary(), alignment=0)
-        
+        self.qdc_ch.connect_signal_changed('Channel', self.__reload_channels__)
+
+        self.spectra_ch = self.SPECTRA.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
+        self.spectra_ch.add_parameter(key="Channel", type='list', values=['BOARD','CH0','CH1','CH2','CH3'])
+        self.SPECTRA.new_autorow()
         self.spectra_tree = self.SPECTRA.place_object(_g.TreeDictionary(), alignment=0)
+        self.spectra_ch.connect_signal_changed('Channel', self.__reload_channels__)
         
+        self.rejection_ch = self.REJECTIONS.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
+        self.rejection_ch.add_parameter(key="Channel", type='list', values=['BOARD','CH0','CH1','CH2','CH3'])
+        self.REJECTIONS.new_autorow()
         self.rejection_tree = self.REJECTIONS.place_object(_g.TreeDictionary(), alignment=0)
+        self.rejection_ch.connect_signal_changed('Channel', self.__reload_channels__)
         
+        self.energy_ch = self.ENERGYCAL.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
+        self.energy_ch.add_parameter(key="Channel", type='list', values=['BOARD','CH0','CH1','CH2','CH3'])
+        self.ENERGYCAL.new_autorow()
         self.energy_tree = self.ENERGYCAL.place_object(_g.TreeDictionary(), alignment=0)
+        self.energy_ch.connect_signal_changed('Channel', self.__reload_channels__)
         
+        self.sync_ch = self.SYNC.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
+        self.sync_ch.add_parameter(key="Channel", type='list', values=['BOARD','CH0','CH1','CH2','CH3'])
+        self.SYNC.new_autorow()
         self.sync_tree = self.SYNC.place_object(_g.TreeDictionary(), alignment=0)
+        self.sync_ch.connect_signal_changed('Channel', self.__reload_channels__)
         
+        self.coinc_ch = self.COINCIDENCE.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
+        self.coinc_ch.add_parameter(key="Channel", value="BOARD")
+        self.COINCIDENCE.new_autorow()
         self.coinc_tree = self.COINCIDENCE.place_object(_g.TreeDictionary(), alignment=0)
+        self.coinc_ch.connect_signal_changed('Channel', self.__reload_channels__)
         
+        self.misc_ch = self.MISC.place_object(_g.TreeDictionary(), alignment=0).set_height(25*self.ratio)
+        self.misc_ch.add_parameter(key="Channel", type='list', values=['BOARD','CH0','CH1','CH2','CH3'])
+        self.MISC.new_autorow()
         self.misc_tree = self.MISC.place_object(_g.TreeDictionary(), alignment=0)
+        self.misc_ch.connect_signal_changed('Channel', self.__reload_channels__)
 
         #INPUT TAB
         input_parameters = list(self.xml_parameters['INPUT'].keys())
@@ -595,23 +692,37 @@ class GUI(_root_reader):
         self.PlotArea = self.TabDataBT.place_object(_pg.PlotWidget(), alignment=0, column_span=3)
         self.PLT = self.PlotArea.getPlotItem()
         
+        self.ROI = _pg.LinearRegionItem([0,10])
+        self.ROI.sigRegionChanged.connect(self.__update_ROI__)
+
+
+        #RESULTS TAB
         self.TabResults = self.TabAreaData.add_tab('Results')
-        self.results = self.TabResults.place_object(_g.TreeDictionary(name+'_results.txt', name), 0, 0, alignment=0)
+        self.data_res = self.TabResults.place_object(_g.DataboxSaveLoad(file_type='.txt', autosettings_path=name+'_datares.txt'), alignment=0).set_width(700*self.ratio)
+        self.data_res.enable_save()
+        self.TabResults.new_autorow()
+        self.PlotAreaResults = self.TabResults.place_object(_pg.PlotWidget(), alignment=0, column_span=1)
+        self.PLT_RES = self.PlotAreaResults.getPlotItem()
+        self.PLT_RES.sigXRangeChanged.connect(self.__update_plot__)
+        self.TabResults.new_autorow()
+        self.results = self.TabResults.place_object(_g.TreeDictionary(name+'_results.txt', name), alignment=0)
         
         #Range for the calculation
-        self.results.add_parameter('Range for calculation/Minimum', float(self.settings['Plot Settings/Axes limits/x min']))
-        self.results.add_parameter('Range for calculation/Maximum', float(self.settings['Plot Settings/Axes limits/x max']))
-
-        #Average, standard deviation and median from the data set (READ ONLY)
-        self.results.add_parameter(key='Results/Average', value=0.0, readonly=True)
-        self.results.add_parameter(key='Results/Median', value=0.0, readonly=True)
-        self.results.add_parameter(key='Results/Standard deviation', value=0.0, readonly=True)
-
+        # self.results.add_parameter('Range for calculation/Minimum', float(self.settings['Plot Settings/Axes limits/x min']))
+        self.results.add_parameter("Begin", round(self.ROI.getRegion()[0], 2), readonly=True)
+        self.results.add_parameter("End", round(self.ROI.getRegion()[1], 2), readonly=True)
+        self.results.add_parameter("Centroid", type='str', readonly=True, tip="Mean of the gaussian distribution.")
+        self.results.add_parameter("Sigma", type='str', readonly=True, tip="Spread of the gaussian distribution.")
+        self.results.add_parameter("χ2", type='str', readonly=True, tip="Reduced χ2 from the gaussian fit.")
+        self.results.add_parameter("FWHM", type='str', readonly=True, tip="Full width at half maximum.")
+        self.results.add_parameter("FWTM", type='str', readonly=True, tip="Full width at tenth of maximum.")
+        self.results.add_parameter("Resolution", type='str', readonly=True, tip="Resolution of the peak.")
 
         
         #Set the default tab opened to the CoMPASS settings tab:
         self.GeneralTabArea.set_current_tab(0)
         self.TabArea.set_current_tab(0)
+        self.TabAreaData.set_current_tab(0)
         #self.filesetlabel = self.TabFileSettings.place_object(_g.Label('Select a folder please.'))
 
         self.__linecolor__()#Loads the line color for the first time.
@@ -619,6 +730,7 @@ class GUI(_root_reader):
 
         _s.settings['dark_theme_qt'] = _dd.isDark()
         self.PlotArea.setBackground('white') if _dd.isLight() else self.PlotArea.setBackground('black')
+        self.PlotAreaResults.setBackground('white') if _dd.isLight() else self.PlotAreaResults.setBackground('black')
         self.__load_all__()
         if show:    self.window.show(block)
 
@@ -676,10 +788,8 @@ class GUI(_root_reader):
 
         self.settings['Plot Settings/Title'] = 'PSD Histogram'
         self.settings['Plot Settings/Axes limits/x min'] = 0
-        try:
-            self.settings['Plot Settings/Axes limits/x max'] = self.spectra_tree['PSD N channels']
-        except:
-            self.settings['Plot Settings/Axes limits/x max'] = 4096
+        self.settings['Plot Settings/Axes limits/x max'] = 1
+        
         self.settings['Plot Settings/Axes limits/y min'] = 0
         self.settings['Plot Settings/Axes limits/y max'] = 5000
         self.settings['Plot Settings/Axes label/x'] = 'ADC bins'
@@ -694,14 +804,12 @@ class GUI(_root_reader):
         self.MCS_btn.set_checked(False)
 
         self.settings['Plot Settings/Title'] = 'Time Histogram'
-        self.settings['Plot Settings/Axes limits/x min'] = 0
-        try:
-            self.settings['Plot Settings/Axes limits/x max'] = self.spectra_tree['Time intervals N channels']
-        except:
-            self.settings['Plot Settings/Axes limits/x max'] = 4096
+        self.settings['Plot Settings/Axes limits/x min'] = self.spectra_tree['Time intervals Tmin']
+        self.settings['Plot Settings/Axes limits/x max'] = self.spectra_tree['Time intervals Tmax']
+        
         self.settings['Plot Settings/Axes limits/y min'] = 0
         self.settings['Plot Settings/Axes limits/y max'] = 5000
-        self.settings['Plot Settings/Axes label/x'] = 'Time (ns)'
+        self.settings['Plot Settings/Axes label/x'] = 'Time (s)'
         self.settings['Plot Settings/Axes label/y'] = 'Counts'
         self.__load_all__()
 
@@ -762,36 +870,98 @@ class GUI(_root_reader):
 
 
     def __plot__(self, *a):
+        if self.PSDvsE_BEFORE:
+            try:
+                self.PLT.removeItem(self.image)
+                self.bar.close()
+            except:
+                print('Did not remove any image.')
+            
+            self.PLT.getViewBox().setLimits(xMin=-_np.Inf, xMax=_np.Inf,    yMin=_np.Inf, yMax=_np.Inf)
+            
+
         if self.EH_btn.is_checked():
+            self.PSDvsE_BEFORE = False
             data = _root_reader.__energyhist__(self, self.files_in_use[0], int(self.spectra_tree['Energy N channels']), tree=self.tree)
 
-            self.data['x'] = data[0]
-            self.data['y'] = data[1]
+            self.data['x'], self.data['y'], self.root_data = data
 
             self.__load_all__()
+            curve_name = f"{self.settings['Plot Settings/Title']}-{self.file_settings['Files Settings/Folder']}"
+
+            self.PLT.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+            self.PLT_RES.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+
+        elif self.PSD_btn.is_checked():
+            self.PSDvsE_BEFORE = False
+            data = _root_reader.__psdhist__(self, self.files_in_use[0], int(self.spectra_tree['PSD N channels']), tree=self.tree)
+
+            self.data['x'], self.data['y'], self.root_data = data
+
+            self.__load_all__()
+            
             curve_name = self.settings['Plot Settings/Title'] + '-' + self.file_settings['Files Settings/Folder']
 
-            self.PLT.plot(self.data['x'], self.data['y'], stepMode='left', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+            self.PLT.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+            self.PLT_RES.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
 
-        elif self.TOF_btn.is_checked():
-            data = _root_reader.__tofhist__(self, self.files_in_use[0], self.files_in_use[1], float(self.settings['Plot Settings/Axes limits/x min']), float(self.settings['Plot Settings/Axes limits/x max']), int(self.spectra_tree['Start-stop Δt N channels']), tree=self.tree)
-            # self.results['Results/Average'] = self.average(data[2])
-            # self.results['Results/Median'] = self.median(data[2])
-            # self.results['Results/Standard deviation'] = self.standard_deviation(data[2])
+        elif self.Time_btn.is_checked():
+            self.PSDvsE_BEFORE = False
+            data = _root_reader.__timehist__(self, self.files_in_use[0], float(self.settings['Plot Settings/Axes limits/x min']), float(self.settings['Plot Settings/Axes limits/x max']), int(self.spectra_tree['Time intervals N channels']), tree=self.tree)
 
-            self.data['x'] = data[0]
-            self.data['y'] = data[1]
-
+            self.data['x'], self.data['y'], self.root_data = data
             self.__load_all__()
+
             curve_name = self.settings['Plot Settings/Title'] + '-' + self.file_settings['Files Settings/Folder']
             
-            self.PLT.plot(self.data['x'], self.data['y'], stepMode=True, fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+            self.PLT.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+            self.PLT_RES.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+
+        elif self.TOF_btn.is_checked():
+            self.PSDvsE_BEFORE = False
+            if self.tree == "Data_F":
+                data = _root_reader.__tofhist__(self, self.files_in_use[0], self.files_in_use[1], float(self.settings['Plot Settings/Axes limits/x min']), float(self.settings['Plot Settings/Axes limits/x max']), int(self.spectra_tree['Start-stop Δt N channels']), tree=self.tree)
+
+                self.data['x'] = data[0]
+                self.data['y'] = data[1]
+
+                self.root_data = data[2]
+
+                self.__load_all__()
+                curve_name = self.settings['Plot Settings/Title'] + '-' + self.file_settings['Files Settings/Folder']
+            
+                self.PLT.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+                self.PLT_RES.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+
+            # if self.tree == "Data_R":
+                # data = _root_reader.__CPPTOF__(self, self.files_in_use[0], self.files_in_use[1])
+        elif self.PSDvsE_btn.is_checked():
+            self.PSDvsE_BEFORE = True
+            self.__clear__()
+            data = _root_reader.__PSDvsE__(self, self.files_in_use[0], float(self.settings['Plot Settings/Axes limits/x min']), float(self.settings['Plot Settings/Axes limits/x max']), int(self.spectra_tree['Energy N channels']), int(self.spectra_tree['PSD N channels']), tree=self.tree)
+            
+            tr = QtGui.QTransform()
+            tr.scale(1, 1/self.spectra_tree['PSD N channels'])
+
+            self.image = _pg.ImageItem(image=data)
+            self.image.setTransform(tr)
+            self.PLT.addItem(self.image)
+            cm = _pg.colormap.getFromMatplotlib('white_turbo')
+            print(_np.sort(data.flatten())[-20:])
+            self.bar = _pg.ColorBarItem(values=(0,20),cmap=cm)
+            self.bar.setImageItem(self.image,insert_in=self.PLT)
+            range_ = self.PLT.getViewBox().viewRange()
+            self.PLT.getViewBox().setLimits(xMin=range_[0][0],xMax=range_[0][1], yMin=range_[1][0], yMax=range_[1][1])
+
 
         elif self.MCS_btn.is_checked():
+            self.PSDvsE_BEFORE = False
             data = _root_reader.__MCSgraph__(self, self.files_in_use[0], tree=self.tree)
 
             self.data['x'] = data[0]
             self.data['y'] = data[1]
+
+            self.root_data = data[2]
 
             self.__load_all__()
             curve_name = self.settings['Plot Settings/Title'] + '-' + self.file_settings['Files Settings/Folder']
@@ -799,12 +969,14 @@ class GUI(_root_reader):
             # curve = _pg.PlotCurveItem(self.data['x'], self.data['y'], fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
             # self.PLT.addItem(curve)
             self.PLT.plot(self.data['x'], self.data['y'], brush=self.brush, pen=self.pen, name=curve_name)
+            self.PLT_RES.plot(self.data['x'], self.data['y'], stepMode='left', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
     
     def __clear__(self, *a):
         """
         Clears the graph.
         """
         self.PLT.clear()
+        self.PLT_RES.clear()
 
     def __save_image__(self, *a):
         """
@@ -813,45 +985,67 @@ class GUI(_root_reader):
         exporter = _export.ImageExporter(self.PlotArea.plotItem)
         exporter.export(self.folder_path+'\SCREENSHOTS\\' + self.settings['Plot Settings/Title'] +'.png')
     
+    def __select_ROI__(self, *a):
+        if self.select.is_checked():
+            self.PLT.addItem(self.ROI)
+        else:
+            self.PLT.removeItem(self.ROI)
+        self.ROI.setRegion((0,50))
+
+    def __update_ROI__(self, *a):
+        self.lower_bound, self.upper_bound = self.ROI.getRegion()
+        self.PLT_RES.setXRange(*self.ROI.getRegion(), padding=0)
+        data = _np.array(self.root_data)
+        # values = data[(self.lower_bound <= self.data['x']) & (self.data['x'] <= self.upper_bound)]
+        indexes = _np.where((self.lower_bound<=self.data['x']) & (self.data['x']<=self.upper_bound))[0]
+        if indexes[-1] == self.settings['Plot Settings/Axes limits/x max']:
+            indexes = _np.delete(indexes, -1)
+        values_range = self.data['y'][indexes]
+        min_range = 0
+        max_range = max(values_range)
+        
+        self.data_res['x'] = self.data['x'][indexes]
+        self.data_res['y'] = self.data['y'][indexes]
+
+        self.PLT_RES.setYRange(min_range, max_range)
+
+    def __update_plot__(self, *a):
+        try:
+            indexes = _np.where((self.lower_bound<=self.data['x']) & (self.data['x']<=self.upper_bound))[0]
+            self.data_res['x'] = self.data['x'][indexes]
+            self.data_res['y'] = self.data['y'][indexes]
+        except:
+            print("Could not set the data")
+        self.ROI.setRegion(self.PLT_RES.getViewBox().viewRange()[0])
+
     def __calculate__(self, *a):
-        if self.settings['Choose plot/Energy Histogram']:
-            data = _root_reader.__energyhist__(self, self.graphsettings['Energy Histogram/File selected'], int(self.graphsettings['Energy Histogram/Energy bins']), tree=self.tree)
+        self.results['Begin'] = round(self.lower_bound,2)
+        self.results['End'] = round(self.upper_bound,2)
+        
+        if self.EH_btn.is_checked():
+            indexes = _np.where((self.lower_bound<=self.data['x']) & (self.data['x']<=self.upper_bound))[0]
+            x_values = self.data['x'][indexes]
+            y_values = self.data['y'][indexes]
+            popt, pcov = _cf(fit, x_values, _np.log(y_values))
+            errors = _np.sqrt(_np.diag(pcov))
+            centroid = _uf(popt[0], errors[0])
+            sigma = _uf(popt[1], errors[1])
+            amp = _uf(popt[2], errors[2]).evalf(_np.exp)
+            
+            y_e = gaussian(x_values, *popt[0:2], amp._value)
 
-            values_kept = []
+            self.results['Centroid'] = str(centroid)
+            self.results['Sigma'] = str(sigma)
+            self.results["χ2"] = str(chi_sqr(y_values, y_e))
+            FWHM = FWAP(x_values, centroid, sigma, amp, 0.5)
+            self.results['FWHM'] = str(FWHM)
+            self.results['FWTM'] = str(FWAP(x_values, centroid, sigma, amp, 0.1))
+            self.results['Resolution'] = str(FWHM/centroid*100)
 
-            for value in data[2]:
-                if self.results['Range for calculation/Minimum'] <= value <= self.results['Range for calculation/Maximum']:
-                    values_kept.append(value)
+            curve_name = f"{self.settings['Plot Settings/Title']}-{self.file_settings['Files Settings/Folder']} - Gaussian fit"
 
-            self.results['Results/Average'] = self.average(values_kept)
-            self.results['Results/Median'] = self.median(values_kept)
-            self.results['Results/Standard deviation'] = self.standard_deviation(values_kept)
+            self.PLT_RES.plot(x_values, gaussian(x_values, *popt[0:2], amp._value), pen=self.pen_fit, name=curve_name)
 
-        elif self.settings['Choose plot/TOF Histogram']:
-            data = _root_reader.__tofhist__(self, self.graphsettings['TOF Histogram/File #1'], self.graphsettings['TOF Histogram/File #2'], self.graphsettings['TOF Histogram/ΔT min'], self.graphsettings['TOF Histogram/ΔT max'], int(self.graphsettings['TOF Histogram/ΔT bins']), tree=self.tree)
-
-            values_kept = []
-
-            for value in data[2]:
-                if self.results['Range for calculation/Minimum'] <= value <= self.results['Range for calculation/Maximum']:
-                    values_kept.append(value)
-
-            self.results['Results/Average'] = self.average(values_kept)
-            self.results['Results/Median'] = self.median(values_kept)
-            self.results['Results/Standard deviation'] = self.standard_deviation(values_kept)
-
-        elif self.settings['Choose plot/MCS Graph']:
-            data = _root_reader.__MCSgraph__(self, self.graphsettings['MCS Graph/File selected'], tree=self.tree)
-
-            values_kept = []
-
-            for value in data[2]:
-                if self.results['Range for calculation/Minimum'] <= value <= self.results['Range for calculation/Maximum']:
-                    values_kept.append(value)
-
-            self.results['Results/Average'] = self.average(values_kept)
-            self.results['Results/Median'] = self.median(values_kept)
-            self.results['Results/Standard deviation'] = self.standard_deviation(values_kept)
 
     def __load_all__(self, *a):
         self.__title__()
@@ -876,12 +1070,14 @@ class GUI(_root_reader):
         """
         if self.settings['Plot Settings/Legend']:
             self.PLT.addLegend()
+            self.PLT_RES.addLegend()
 
     def __grid__(self, *a):
         """
         Shows the grid of the graph for both axis.
         """
         self.PLT.showGrid(x=self.settings['Plot Settings/Grid/x'], y=self.settings['Plot Settings/Grid/y'])
+        self.PLT_RES.showGrid(x=self.settings['Plot Settings/Grid/x'], y=self.settings['Plot Settings/Grid/y'])
 
     def __ax_labels__(self, *a):
         """
@@ -889,7 +1085,9 @@ class GUI(_root_reader):
         """
         self.PLT.setLabel(axis='left', text=self.settings['Plot Settings/Axes label/y'])
         self.PLT.setLabel(axis='bottom', text=self.settings['Plot Settings/Axes label/x'])
-
+        self.PLT_RES.setLabel(axis='bottom', text=self.settings['Plot Settings/Axes label/x'])
+        self.PLT_RES.setLabel(axis='left', text=self.settings['Plot Settings/Axes label/y'])
+    
     def __xlim__(self, *a):
         """
         Sets the limits on the x axis of the graph.
@@ -915,6 +1113,8 @@ class GUI(_root_reader):
         Sets the line color by changing the Red, Green, Blue and Alpha values.
         """
         self.pen = _pg.mkPen(self.settings['Plot Settings/Line Color/Red'], self.settings['Plot Settings/Line Color/Green'], self.settings['Plot Settings/Line Color/Blue'], self.settings['Plot Settings/Line Color/Alpha'])
+        # comp = complementary((self.settings['Plot Settings/Line Color/Red'], self.settings['Plot Settings/Line Color/Green'], self.settings['Plot Settings/Line Color/Blue'], self.settings['Plot Settings/Line Color/Alpha']))
+        self.pen_fit = _pg.mkPen(0,0,0,100) if _dd.isLight() else _pg.mkPen(255,255,255,100)
 
     def __fillcolor__(self, *a):
         """
@@ -1053,7 +1253,51 @@ class GUI(_root_reader):
                 root_files.append(file)
 
         return root_files
-        
+
+
+    def __load_channel_settings__(self, tree_dict, param_tree, key, *a):
+        key_1 = key
+        key_2 = key
+        if key == "ENERGY CALIBRATION":
+            key_1 = "ENERGY_CALIBRATION"
+            key_2 = key
+        if key == "ONBOARD COINCIDENCES":
+            key_1 = "HARDWARE_COINCIDENCE"
+            key_2 = key
+        if key == "SPECTRA":
+            param_keys = param_tree.keys()
+            if tree_dict["Channel"] == "BOARD":
+                info = self.board_settings
+            if tree_dict["Channel"] == "CH0":
+                info = self.xml_info.get_chn_parameters(0)
+            if tree_dict["Channel"] == "CH1":
+                info = self.xml_info.get_chn_parameters(1)
+            if tree_dict["Channel"] == "CH2":
+                info = self.xml_info.get_chn_parameters(2)
+            if tree_dict["Channel"] == "CH3":
+                info = self.xml_info.get_chn_parameters(3)
+            for param in param_keys:
+                if self.xml_types[key_1][param] == 'str':
+                    param_tree[param] = info[key_2][self.xml_parameters[key_1][param]][0:-2]
+                else:
+                    param_tree[param] = info[key_2][self.xml_parameters[key_1][param]]
+ 
+        else:
+            param_keys = param_tree.keys()
+            if tree_dict["Channel"] == "BOARD":
+                info = self.board_settings
+            if tree_dict["Channel"] == "CH0":
+                info = self.xml_info.get_chn_parameters(0)
+            if tree_dict["Channel"] == "CH1":
+                info = self.xml_info.get_chn_parameters(1)
+            if tree_dict["Channel"] == "CH2":
+                info = self.xml_info.get_chn_parameters(2)
+            if tree_dict["Channel"] == "CH3":
+                info = self.xml_info.get_chn_parameters(3)
+            for param in param_keys:
+                param_tree[param] = info[key_1][self.xml_parameters[key_2][param]]
+            
+
     def __settings_folder_changed__(self, *a):
         """
         Reloads the files from the chosen folder.
@@ -1065,9 +1309,9 @@ class GUI(_root_reader):
         self.path_run_info_file = self.folder_path + '\\' + self.run_info_file
         info = InfoParser(self.path_run_info_file)
         self.run_info_data = info.get_run_info()
-        xml_info = XMLParser(self.path_compass_settings)
-        board_props = xml_info.get_board_properties()
-        board_settings = xml_info.get_parameters()
+        self.xml_info = XMLParser(self.path_compass_settings)
+        board_props = self.xml_info.get_board_properties()
+        self.board_settings = self.xml_info.get_parameters()
         #RUN INFO
         self.run_info["Run ID"] = self.run_info_data[0]
         self.run_info["Start Time"] = self.run_info_data[1]
@@ -1090,53 +1334,31 @@ class GUI(_root_reader):
 
         #SETTINGS INFO
         #INPUT TAB
-        input_keys = self.input_tree.keys()
-        for param in input_keys:
-            self.input_tree[param] = board_settings['INPUT'][self.xml_parameters['INPUT'][param]]
+        self.__load_channel_settings__(self.input_ch, self.input_tree, "INPUT")
 
         #DISCRIMINATOR TAB
-        disc_keys = self.disc_tree.keys()
-        for param in disc_keys:
-            self.disc_tree[param] = board_settings['DISCRIMINATOR'][self.xml_parameters['DISCRIMINATOR'][param]]
+        self.__load_channel_settings__(self.disc_ch, self.disc_tree, "DISCRIMINATOR")
 
         #QDC TAB
-        qdc_keys = self.qdc_tree.keys()
-        for param in qdc_keys:
-            self.qdc_tree[param] = board_settings['QDC'][self.xml_parameters['QDC'][param]]
-        
+        self.__load_channel_settings__(self.qdc_ch, self.qdc_tree, "QDC")
+
         #SPECTRA TAB
-        spectra_keys = self.spectra_tree.keys()
-        for param in spectra_keys:
-            if self.xml_types['SPECTRA'][param] == 'str':
-                self.spectra_tree[param] = (board_settings['SPECTRA'][self.xml_parameters['SPECTRA'][param]])[0:-2]
-            else:
-                self.spectra_tree[param] = board_settings['SPECTRA'][self.xml_parameters['SPECTRA'][param]]
-                
+        self.__load_channel_settings__(self.spectra_ch, self.spectra_tree, "SPECTRA")
 
         #REJECTIONS TAB
-        rej_keys = self.rejection_tree.keys()
-        for param in rej_keys:
-            self.rejection_tree[param] = board_settings['REJECTIONS'][self.xml_parameters['REJECTIONS'][param]]
+        self.__load_channel_settings__(self.rejection_ch, self.rejection_tree, "REJECTIONS")
 
         #ENERGY CALIBRATION TAB
-        cal_keys = self.energy_tree.keys()
-        for param in cal_keys:
-            self.energy_tree[param] = board_settings['ENERGY_CALIBRATION'][self.xml_parameters['ENERGY CALIBRATION'][param]]
+        self.__load_channel_settings__(self.energy_ch, self.energy_tree, "ENERGY CALIBRATION")
 
         #SYNC TAB
-        sync_keys = self.sync_tree.keys()
-        for param in sync_keys:
-            self.sync_tree[param] = board_settings['SYNC'][self.xml_parameters['SYNC'][param]]
+        self.__load_channel_settings__(self.sync_ch, self.sync_tree, "SYNC")
 
         #ONBOARD COINCIDENCE TAB
-        coinc_keys = self.coinc_tree.keys()
-        for param in coinc_keys:
-            self.coinc_tree[param] = board_settings['HARDWARE_COINCIDENCE'][self.xml_parameters['ONBOARD COINCIDENCES'][param]]
+        self.__load_channel_settings__(self.coinc_ch, self.coinc_tree, "ONBOARD COINCIDENCES")
 
         #MISCELLANEOUS TAB
-        misc_keys = self.misc_tree.keys()
-        for param in misc_keys:
-            self.misc_tree[param] = board_settings['MISC'][self.xml_parameters['MISC'][param]]
+        self.__load_channel_settings__(self.misc_ch, self.misc_tree, "MISC")
 
         self.files = self.__getfiles__(self.folder_containing_root)
         # print(self.files)
@@ -1148,6 +1370,17 @@ class GUI(_root_reader):
             self.tree = 'Data_R'
 
         self.__channel_buttons__()
+
+    def __reload_channels__(self, *a):
+        self.__load_channel_settings__(self.input_ch, self.input_tree, "INPUT")
+        self.__load_channel_settings__(self.disc_ch, self.disc_tree, "DISCRIMINATOR")
+        self.__load_channel_settings__(self.qdc_ch, self.qdc_tree, "QDC")
+        self.__load_channel_settings__(self.spectra_ch, self.spectra_tree, "SPECTRA")
+        self.__load_channel_settings__(self.rejection_ch, self.rejection_tree, "REJECTIONS")
+        self.__load_channel_settings__(self.energy_ch, self.energy_tree, "ENERGY CALIBRATION")
+        self.__load_channel_settings__(self.sync_ch, self.sync_tree, "SYNC")
+        self.__load_channel_settings__(self.coinc_ch, self.coinc_tree, "ONBOARD COINCIDENCES")
+        self.__load_channel_settings__(self.misc_ch, self.misc_tree, "MISC")
                         
     def __channel_buttons__(self, *a): 
         ch0_state = self.ch0.is_checked()
@@ -1156,11 +1389,29 @@ class GUI(_root_reader):
         ch3_state = self.ch3.is_checked()
      
         states = [ch0_state, ch1_state, ch2_state, ch3_state]
+        all_labels = [self.xml_info.get_ch_label(i) for i in range(0,4)]
+        labels = []
+        for label in all_labels:
+            if label[1] == "CH":
+                labels.append(label[1]+label[0])
+            else:
+                labels.append(label[1])
+        chns_labels = {}
+        for index, label in enumerate(labels):
+            chns_labels[index] = label
+        # print(chns_labels)
+        buttons_files = {}
+        for file in self.files:
+            for label in labels:
+                if label in file:
+                    buttons_files[label] = file
+        # print(self.tree)
+        # print(buttons_files)
 
-        ch0_filepath = self.folder_containing_root + '\\' + self.files[0]
-        ch1_filepath = self.folder_containing_root + '\\' + self.files[1]
-        ch2_filepath = self.folder_containing_root + '\\' + self.files[2]
-        ch3_filepath = self.folder_containing_root + '\\' + self.files[3]   
+        ch0_filepath = self.folder_containing_root + '\\' + buttons_files[chns_labels[0]]
+        ch1_filepath = self.folder_containing_root + '\\' + buttons_files[chns_labels[1]]
+        ch2_filepath = self.folder_containing_root + '\\' + buttons_files[chns_labels[2]]
+        ch3_filepath = self.folder_containing_root + '\\' + buttons_files[chns_labels[3]]
 
         paths = [ch0_filepath, ch1_filepath, ch2_filepath, ch3_filepath]
 
@@ -1171,17 +1422,9 @@ class GUI(_root_reader):
 
         if ch0_state:
             self.file_label.set_text('CH0')
-            # self.graphsettings['Energy Histogram/File selected'] = ch0_filepath
-            # self.graphsettings['Energy Histogram/File name'] = 'CH0'
-            # self.graphsettings['MCS Graph/File selected'] = ch0_filepath
-            # self.graphsettings['MCS Graph/File name'] = 'CH0'
 
             if ch1_state:
                 self.file_label.set_text('CH0&CH1')
-                # self.graphsettings['TOF Histogram/File #1'] = ch0_filepath
-                # self.graphsettings['TOF Histogram/File name #1'] = 'CH0'
-                # self.graphsettings['TOF Histogram/File #2'] = ch1_filepath
-                # self.graphsettings['TOF Histogram/File name #2'] = 'CH1'
                 
                 if ch2_state:
                     self.file_label.set_text('CH0&CH1&CH2')
@@ -1193,73 +1436,35 @@ class GUI(_root_reader):
             else:
                 if ch2_state:
                     self.file_label.set_text('CH0&CH2')
-                    # self.graphsettings['TOF Histogram/File #1'] = ch0_filepath
-                    # self.graphsettings['TOF Histogram/File name #1'] = 'CH0'
-                    # self.graphsettings['TOF Histogram/File #2'] = ch2_filepath
-                    # self.graphsettings['TOF Histogram/File name #2'] = 'CH2'
                     if ch3_state:
                         self.file_label.set_text('CH0&CH2&CH3')
                 else:
                     if ch3_state:
                         self.file_label.set_text('CH0&CH3')
-                        # self.graphsettings['TOF Histogram/File #1'] = ch0_filepath
-                        # self.graphsettings['TOF Histogram/File name #1'] = 'CH0'
-                        # self.graphsettings['TOF Histogram/File #2'] = ch3_filepath
-                        # self.graphsettings['TOF Histogram/File name #2'] = 'CH3'
         else:
             if ch1_state:
                 self.file_label.set_text('CH1')
-                # self.graphsettings['Energy Histogram/File selected'] = ch1_filepath
-                # self.graphsettings['Energy Histogram/File name'] = 'CH1'
-                # self.graphsettings['MCS Graph/File selected'] = ch1_filepath
-                # self.graphsettings['MCS Graph/File name'] = 'CH1'
                 if ch2_state:
                     self.file_label.set_text('CH1&CH2')
-                    # self.graphsettings['TOF Histogram/File #1'] = ch1_filepath
-                    # self.graphsettings['TOF Histogram/File name #1'] = 'CH1'
-                    # self.graphsettings['TOF Histogram/File #2'] = ch2_filepath
-                    # self.graphsettings['TOF Histogram/File name #2'] = 'CH2'
                     if ch3_state:
                         self.file_label.set_text('CH1&CH2&CH3')
                 else:
                     if ch3_state:
                         self.file_label.set_text('CH1&CH3')
-                        # self.graphsettings['TOF Histogram/File #1'] = ch1_filepath
-                        # self.graphsettings['TOF Histogram/File name #1'] = 'CH1'
-                        # self.graphsettings['TOF Histogram/File #2'] = ch3_filepath
-                        # self.graphsettings['TOF Histogram/File name #2'] = 'CH3'
             else:
                 if ch2_state:
                     self.file_label.set_text('CH2')
-                    # self.graphsettings['Energy Histogram/File selected'] = ch2_filepath
-                    # self.graphsettings['Energy Histogram/File name'] = 'CH2'
-                    # self.graphsettings['MCS Graph/File selected'] = ch2_filepath
-                    # self.graphsettings['MCS Graph/File name'] = 'CH2'
                     if ch3_state:
                         self.file_label.set_text('CH2&CH3')
-                        # self.graphsettings['TOF Histogram/File #1'] = ch2_filepath
-                        # self.graphsettings['TOF Histogram/File name #1'] = 'CH2'
-                        # self.graphsettings['TOF Histogram/File #2'] = ch3_filepath
-                        # self.graphsettings['TOF Histogram/File name #2'] = 'CH3'
                 else:
                     if ch3_state:
                         self.file_label.set_text('CH3')
-                        # self.graphsettings['Energy Histogram/File selected'] = ch3_filepath
-                        # self.graphsettings['Energy Histogram/File name'] = 'CH3'
-                        # self.graphsettings['MCS Graph/File selected'] = ch3_filepath
-                        # self.graphsettings['MCS Graph/File name'] = 'CH3'
                     else:
                         self.file_label.set_text('No file selected')
-                        # self.graphsettings['Energy Histogram/File selected'] = 'No file selected'
-                        # self.graphsettings['Energy Histogram/File name'] = 'No file selected'
-                        # self.graphsettings['TOF Histogram/File #1'] = 'No file selected'
-                        # self.graphsettings['TOF Histogram/File #2'] = 'No file selected'
-                        # self.graphsettings['TOF Histogram/File name #1'] = 'No file selected'
-                        # self.graphsettings['TOF Histogram/File name #2'] = 'No file selected'
 
 
 if __name__ == '__main__':
-    module_list = ['cppimport', 'pybind11', 'uproot', 'pyqtgraph', 'darkdetect', 'numpy', 'pandas','PyQt5']
+    module_list = ['cppimport', 'pybind11', 'uproot', 'pyqtgraph=0.12.4', 'darkdetect', 'numpy', 'pandas','PyQt5']
     print(bcolors.WARNING + "Please make sure that the following modules are installed on your machine." + bcolors.ENDC)
     for module in module_list:
         if module != module_list[-1]:
@@ -1267,6 +1472,6 @@ if __name__ == '__main__':
         else:
             print(module)
     print(bcolors.WARNING + "Also note that you can use raw ROOT files directly to calculate the TOF." + bcolors.ENDC)
-    time.sleep(5)
+    time.sleep(2)
     running_from_main = True
     self = GUI()

@@ -121,7 +121,7 @@ std::pair<std::vector<int64_t>, std::vector<int64_t>> process(
         const std::vector<int64_t> & stops, 
         int64_t upper_bound) {
     const std::size_t starts_size = starts.size();
-    std::cout << "process slice:" << starts_size << std::endl;
+    std::cout << "Processing slice: " << starts_size << std::endl;
     std::vector<int64_t> res_starts; // (starts_size);
     std::vector<int64_t> res_stops; // (starts_size);
 
@@ -155,14 +155,14 @@ std::tuple<py::array_t<int64_t>, py::array_t<int64_t>> TOF(py::array_t<int64_t> 
 #if MEASURE
     auto tend = std::chrono::steady_clock::now();
     std::chrono::duration<double> elapsed_seconds = tend - tstart;
-    std::cout << "elapsed time vec init: " << elapsed_seconds.count() << "s\n";
+    std::cout << "Elapsed time for vector initialization: " << elapsed_seconds.count() << "s.\n";
 #endif
     std::vector<int64_t> start; 
     std::vector<int64_t> stop;
 
 #if 1
-    std::cout << "cpp start:" << vector_start.size() << std::endl;
-    std::cout << "cpp stop :" << vector_stop.size() << std::endl;
+    std::cout << "C++ start vector size: " << vector_start.size() << std::endl;
+    std::cout << "C++ stop vector size: " << vector_stop.size() << std::endl;
 
     const std::size_t cpu_count = std::thread::hardware_concurrency();
     const std::size_t vector_start_size = vector_start.size();
@@ -219,6 +219,7 @@ std::tuple<py::array_t<int64_t>, py::array_t<int64_t>> TOF(py::array_t<int64_t> 
     return {start_array, stop_array};
 #endif
 }
+
 
 
 // std::tuple<py::array_t<int64_t>, py::array_t<unsigned long long>> test(py::array_t<int64_t> test_array){

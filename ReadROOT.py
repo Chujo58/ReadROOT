@@ -64,13 +64,20 @@ class _root_reader():
             value = 0
         return value
 
+
+    def calc_psd(self, data):
+        psd_func = _np.vectorize(self.PSD)
+        PSD_values = psd_func(data['Energy'], data['EnergyShort'])
+        data.insert(2, 'PSD', PSD_values)
+        
+
     @staticmethod
     def get_unfiltered(data_raw):
         indexes = _np.where(data['Flags'] == 16384)[0]
         temp_dict = {}
         for key in data.keys():
             temp_dict[key] = data[key][indexes]
-        return pd.DataFrame(temp_dict)
+        return _pd.DataFrame(temp_dict)
 
     @staticmethod
     def data_in_range(data_unfiltered, start, stop):
@@ -94,11 +101,14 @@ class _root_reader():
         filtered_data = tree.arrays(keys, library='np')
         
         filtered_DF = _pd.DataFrame(filtered_data)
-        if raw:
+        if not raw:
             timestamps = filtered_DF['Timestamp']
             formatted_timestamps = _pd.to_numeric(timestamps, downcast='integer')
             filtered_DF = filtered_DF.drop('Timestamp', axis=1)
             filtered_DF.insert(1, 'Timestamp', formatted_timestamps)
+        
+        self.calc_psd(filtered_DF)
+        
         return filtered_DF
 
     def __energyhist__(self, filepath, default_bins=4096, tree='Data_F'):
@@ -117,33 +127,23 @@ class _root_reader():
         """
         data = self.__getdata__(filepath, tree)
         hist = _np.histogram(data['Energy'], bins=default_bins, range=(0,default_bins))
-        x = hist[1][1:]
+        x = hist[1]#[1:]
         y = hist[0]
         return (x, y, data['Energy'])
 
     def __psdhist__(self, filepath, default_bins=4096, tree='Data_F'):
         data = self.__getdata__(filepath, tree)
-        psd_func = _np.vectorize(self.PSD)
-        PSD_values = psd_func(data['Energy'], data['EnergyShort'])
-        data.insert(2, 'PSD', PSD_values)
         hist = _np.histogram(data['PSD'], bins=default_bins, range=(0,1))
-        x = hist[1][1:]
+        x = hist[1]#[1:]
         y = hist[0]
         return (x, y, data['PSD'])
         
-    def __timehist__(self, filepath, min_bin, max_bin, default_bins=4096, default_bin_size = 0.045, tree='Data_F'):
+    def __timehist__(self, filepath, min_bin, max_bin, default_bins=4096, tree='Data_F'):
         data = self.__getdata__(filepath, tree)
         time_difference = _np.ediff1d(data['Timestamp']/1000)
 
-        bin_range = max_bin - min_bin
-        bin_size = round(bin_range/default_bins, 3)
-        if bin_size < default_bin_size:
-            max_bin = min_bin + default_bins * default_bin_size
-            bin_size = default_bin_size
-            bin_range = max_bin - min_bin
-
         hist = _np.histogram(time_difference, bins=default_bins, range=(min_bin, max_bin))
-        x = hist[1][1:]
+        x = hist[1]#[1:]
         y = hist[0]
         return (x, y, time_difference)
 
@@ -194,6 +194,7 @@ class _root_reader():
         hist = _np.histogram(delta_time, default_bins, range=(min_bin, max_bin))
         x = hist[1]#[1:]
         y = hist[0]
+        print(x.shape, y.shape)
         return (x, y, delta_time)
 
     def __CPPTOF__(self, file1, file2, low_cut_0, high_cut_0, low_cut_1, high_cut_1, window, min_bin, max_bin, default_bins=8192, default_bin_size=0.045, tree="Data_R"):
@@ -220,6 +221,13 @@ class _root_reader():
         x = hist[1]
         y = hist[0]
         return (x, y, diffs)        
+
+
+    def __PSDvsE__(self, filepath, min_e, max_e, default_energy_bins=4096, default_psd_bins=4096, tree='Data_F'):
+        data = self.__getdata__(filepath, tree)
+        hist = _np.histogram2d(data['Energy'], data['PSD'], [default_energy_bins, default_psd_bins], range=((min_e,max_e),(0,1)))
+        return hist[0]
+        
 
 
     def __MCSgraph__(self, filepath, tree='Data_F'):

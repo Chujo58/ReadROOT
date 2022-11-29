@@ -96,7 +96,7 @@ class XMLParser:
         self.parameters['SPECTRA']['SW_PARAMETER_TIME_DIFFERENCE_CH_T0'] = float(self.parameters['SPECTRA']['SW_PARAMETER_TIME_DIFFERENCE_CH_T0'])*10**(-9)
         self.parameters['SPECTRA']['SW_PARAMETER_TIME_DIFFERENCE_CH_T1'] = float(self.parameters['SPECTRA']['SW_PARAMETER_TIME_DIFFERENCE_CH_T1'])*10**(-9)
         self.parameters['HARDWARE_COINCIDENCE']['SRV_PARAM_COINC_TRGOUT'] = float(self.parameters['HARDWARE_COINCIDENCE']['SRV_PARAM_COINC_TRGOUT'])*10**(-9)
-
+        self.parameters['REJECTIONS']['SW_PARAMETER_CH_ENERGYCUTENABLE'] = (True if self.parameters['REJECTIONS']['SW_PARAMETER_CH_ENERGYCUTENABLE'] == 'true' else False)
     
     def get_parameters(self):
         """
@@ -126,15 +126,44 @@ class XMLParser:
 
     def get_chn_parameters(self, chn_number: str):
         root = ET.parse(self.file).getroot()
-        chns = root.findall('board/channel')
-        params = {}
-        for chn in chns:
-            if chn.find('index').text == chn_number:
-                values = chn.find('values')
-        for entry in values:
-            params[entry.find('key').text] = entry.find('value').text
+        channels = root.findall('board/channel')
+        channel_in_use = channels[chn_number]
+        keys = channel_in_use.findall('values/entry/key')
+        values = channel_in_use.findall('values/entry/value')
+        for group in self.parameters:
+            for index, key in enumerate(keys):
+                if key.text in self.parameters[group]:
+                    if 'true' in values[index].text or 'false' in values[index].text:
+                        values[index].text = (True if values[index].text == 'true' else False)
+                    else:
+                        self.parameters[group][key.text] = values[index].text
+        return self.parameters
 
-        return params
+    def get_ch_label(self, chn_number: str):
+        root = ET.parse(self.file).getroot()
+        channels = root.findall('board/channel')
+        channel_to_check = channels[chn_number]
+        index = channel_to_check.find('index').text
+        entries = channel_to_check.findall('values/entry')
+        for entry in entries:
+            if entry.find('key').text == "SW_PARAMETER_CH_LABEL":
+                label = entry.find('value').text
+                break
+        else: # I'm a genius. Don't mind me using disgusting functions in python.
+            label = "CH"
+        # keys = channel_to_check.findall('values/entry/key')
+        # values = channel_to_check.findall('values/entry/value')
+        # if len(keys) == 0 and len(values) == 0:
+        #     label = "CH"
+        # for indexes, key in enumerate(keys):
+        #     print(key.text)
+        #     if key.text == "SW_PARAMETER_CH_LABEL":
+        #         label = values[indexes].text
+        #         break
+        #     else:
+        #         label = "CH"
+        # label = channel_to_check.find('values/entry/value').text if channel_to_check.find('values/entry/value') is not None else self.parameters['MISC']['SW_PARAMETER_CH_LABEL']
+        return (index, label)
 
 
 class InfoParser:
@@ -151,6 +180,7 @@ class InfoParser:
         return self.id, self.time_start, self.time_stop, self.time_real
 
 if __name__ == '__main__':
-    file = fd.askopenfilename()
+    file = "C:\\Users\\chloe\\OneDrive - McGill University\\Coincidence Testing\\Co60 Spectrums with different settings\\DAQ\\4096Chns-20lsb(LE)-80Gain-(300.80.50)-150s\\settings.xml"
     test = XMLParser(file)
-    print(bool(test.get_chn_parameters('0')))
+    test.get_parameters()
+    print(test.get_ch_label(2))
