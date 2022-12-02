@@ -14,7 +14,7 @@ This code is able to reproduce the important graphs that the CoMPASS software ma
 # Imports
 import os as _os
 #----------------------------------------------------------------------------
-# Other imports
+# Other imports 
 from ReadROOT import _root_reader
 from XML_Parser import InfoParser, XMLParser
 import spinmob as _s
@@ -335,10 +335,7 @@ class GUI(_root_reader):
         self.select.set_style_checked(style='image: url(Images/SelectROIOn.png)')
         self.select.signal_toggled.connect(self.__select_ROI__)
 
-        self.calculate = self.grid_top.place_object(_g.Button(' ', tip='Calculate Results')).set_width(45*self.ratio).set_height(45*self.ratio)
-        self.calculate.set_style_unchecked(style='image: url(Images/Calculate.png)')
-        self.calculate.signal_clicked.connect(self.__calculate__)
-        
+                
         #General tab area containing the graph and COMPASS sections
         self.GeneralTabArea = self.grid_bot.place_object(_g.TabArea(name+'_gen_tabs_settings.txt'), alignment=0)
         self.COMPASS = self.GeneralTabArea.add_tab('CoMPASS')
@@ -698,14 +695,21 @@ class GUI(_root_reader):
 
         #RESULTS TAB
         self.TabResults = self.TabAreaData.add_tab('Results')
-        self.data_res = self.TabResults.place_object(_g.DataboxSaveLoad(file_type='.txt', autosettings_path=name+'_datares.txt'), alignment=0).set_width(700*self.ratio)
-        self.data_res.enable_save()
+        self.TOP_ROW = self.TabResults.place_object(_g.GridLayout(False)).set_height(50*self.ratio)
+
+        self.calculate = self.TOP_ROW.place_object(_g.Button(' ', tip='Calculate Results'), 0, 0).set_width(45*self.ratio).set_height(45*self.ratio)
+        self.calculate.set_style_unchecked(style='image: url(Images/Calculate.png)')
+        self.calculate.signal_clicked.connect(self.__calculate__)
+        
         self.TabResults.new_autorow()
-        self.PlotAreaResults = self.TabResults.place_object(_pg.PlotWidget(), alignment=0, column_span=1)
+        self.data_res = self.TOP_ROW.place_object(_g.DataboxSaveLoad(file_type='.txt', autosettings_path=name+'_datares.txt'), 1, 0, alignment=0)#.set_width(665*self.ratio).set_height(45*self.ratio)
+        self.data_res.enable_save()
+        
+        self.PlotAreaResults = self.TabResults.place_object(_pg.PlotWidget(), alignment=0, column_span=2)
         self.PLT_RES = self.PlotAreaResults.getPlotItem()
         self.PLT_RES.sigXRangeChanged.connect(self.__update_plot__)
         self.TabResults.new_autorow()
-        self.results = self.TabResults.place_object(_g.TreeDictionary(name+'_results.txt', name), alignment=0)
+        self.results = self.TabResults.place_object(_g.TreeDictionary(name+'_results.txt', name), alignment=0, column_span=2)
         
         #Range for the calculation
         # self.results.add_parameter('Range for calculation/Minimum', float(self.settings['Plot Settings/Axes limits/x min']))
