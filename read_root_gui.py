@@ -13,9 +13,10 @@ This code is able to reproduce the important graphs that the CoMPASS software ma
 #----------------------------------------------------------------------------
 # Imports
 import os as _os
+import sys as _sys
 #----------------------------------------------------------------------------
 # Other imports 
-from ReadROOT import _root_reader
+from read_root import _root_reader
 from XML_Parser import InfoParser, XMLParser
 import spinmob as _s
 import spinmob.egg as _egg
@@ -36,6 +37,10 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import cm
 
 _g = _egg.gui
+
+_os.chdir('ReadROOT')
+print(_os.getcwd())
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -1273,13 +1278,13 @@ class GUI(_root_reader):
             if tree_dict["Channel"] == "BOARD":
                 info = self.board_settings
             if tree_dict["Channel"] == "CH0":
-                info = self.xml_info.get_chn_parameters(0)
+                info = self.xml_info.get_chn_parameters('0')
             if tree_dict["Channel"] == "CH1":
-                info = self.xml_info.get_chn_parameters(1)
+                info = self.xml_info.get_chn_parameters('1')
             if tree_dict["Channel"] == "CH2":
-                info = self.xml_info.get_chn_parameters(2)
+                info = self.xml_info.get_chn_parameters('2')
             if tree_dict["Channel"] == "CH3":
-                info = self.xml_info.get_chn_parameters(3)
+                info = self.xml_info.get_chn_parameters('3')
             for param in param_keys:
                 if self.xml_types[key_1][param] == 'str':
                     param_tree[param] = info[key_2][self.xml_parameters[key_1][param]][0:-2]

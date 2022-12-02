@@ -1,9 +1,13 @@
 import numpy as _np
+import sys
 import matplotlib.pyplot as _plt
 import uproot as _ur
 import pandas as _pd
 import tkinter.filedialog as _fd
 from scipy.optimize import curve_fit
+
+sys.path.append('ReadROOT/')
+
 import cppimport
 funcs = cppimport.imp("wrap")
 #from scipy import asarray as ar,exp
