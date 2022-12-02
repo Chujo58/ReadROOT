@@ -1,6 +1,20 @@
-* Unable to work out the ROIs so we will have to stick with the current Results tab.
-* Will try to work out the log mode at some point?
-* Try to get the PSD vs Energy plot. (This worked in seperate file will add the function later)
-* Add a darkmode/lightmode button (with changing text? if possible)
-* Order for the graphs buttons: energy hist, psd hist, time hist, tof hist, psdvse hist, mcs graph
-* make psd hist, time hist and psdvse hist
+**Created by :** Chloé Legué
+
+**Current version date :** 2022/12/02
+
+**Version =** 1.0
+
+
+This code was made for the coincidence experiment at McGill University. The code allows the user to choose a folder containing the results saved from the CoMPASS software made by CAEN. This code should be used with the CAEN DT5751 or with any other digitizer that uses CoMPASS to save files. This code is also capable of reproducing most of the graphics made by the CoMPASS Plot:
+
+* Energy Histogram
+* PSD Histogram
+
+* Time Histogram
+* TOF Histogram
+
+* MCS Graph
+
+Other graphs are not available at the moment. Do note that the log mode is not working at the moment and will be fixed at a later date.
+
+Please refer to the Wiki to know how to use GUI properly.
