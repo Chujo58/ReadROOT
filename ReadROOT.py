@@ -73,10 +73,10 @@ class _root_reader():
 
     @staticmethod
     def get_unfiltered(data_raw):
-        indexes = _np.where(data['Flags'] == 16384)[0]
+        indexes = _np.where(data_raw['Flags'] == 16384)[0]
         temp_dict = {}
-        for key in data.keys():
-            temp_dict[key] = data[key][indexes]
+        for key in data_raw.keys():
+            temp_dict[key] = data_raw[key][indexes]
         return _pd.DataFrame(temp_dict)
 
     @staticmethod
@@ -344,8 +344,8 @@ class RootPlotter(_root_reader):
         _plt.ylabel(y_label)
         if self.show:    _plt.show()
 
-if __name__ == '__main__':
-    test = _root_reader()
-    data = test.__psdhist__("C:\\Users\\clegue4\\OneDrive - McGill University\\Coincidence Testing\\Voltage Bias Setup\\DAQ\\Ba133-EQ2611-1000V\\RAW\\DataR_CH0@DT5751_1989_Ba133-EQ2611-1000V.root", 0, 1000, tree='Data_R')
-    _plt.plot(data[0], data[1], drawstyle='steps-mid')
-    _plt.show()
+# if __name__ == '__main__':
+#     test = _root_reader()
+#     data = test.__psdhist__("C:\\Users\\clegue4\\OneDrive - McGill University\\Coincidence Testing\\Voltage Bias Setup\\DAQ\\Ba133-EQ2611-1000V\\RAW\\DataR_CH0@DT5751_1989_Ba133-EQ2611-1000V.root", 0, 1000, tree='Data_R')
+#     _plt.plot(data[0], data[1], drawstyle='steps-mid')
+#     _plt.show()
