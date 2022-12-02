@@ -16,8 +16,12 @@ import os as _os
 import sys as _sys
 #----------------------------------------------------------------------------
 # Other imports 
-from read_root import _root_reader
-from XML_Parser import InfoParser, XMLParser
+from . import read_root
+_root_reader = read_root._root_reader
+from . import XML_Parser
+#XML_Parser import InfoParser, XMLParser
+InfoParser = XML_Parser.InfoParser
+XMLParser = XML_Parser.XMLParser
 import spinmob as _s
 import spinmob.egg as _egg
 import numpy as _np
@@ -32,14 +36,15 @@ import re as _re
 from PyQt5 import QtGui, QtWidgets
 import time
 from scipy.optimize import curve_fit as _cf
-from ErrorPropagation import UFloat as _uf
+from . import ErrorPropagation
+_uf = ErrorPropagation.UFloat
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import cm
 
 _g = _egg.gui
 
-_os.chdir('ReadROOT')
-print(_os.getcwd())
+# _os.chdir('AppData/Local/Programs/Python/lib/site-packages/ReadROOT')
+# print(_os.getcwd())
 
 
 class bcolors:

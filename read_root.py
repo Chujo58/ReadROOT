@@ -6,11 +6,16 @@ import pandas as _pd
 import tkinter.filedialog as _fd
 from scipy.optimize import curve_fit
 
-sys.path.append('ReadROOT/')
+import os as _os
+
+# # sys.path.append('AppData/Local/Programs/Python/lib/site-packages/ReadROOT')
+
+# print(_os.getcwd())
+# print(_os.listdir())
 
 import cppimport
 funcs = cppimport.imp("wrap")
-#from scipy import asarray as ar,exp
+# from scipy import asarray as ar,exp
 
 
 class _root_reader():
