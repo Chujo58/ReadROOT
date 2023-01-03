@@ -1316,15 +1316,15 @@ class GUI(_root_reader):
         if key == "SPECTRA":
             param_keys = param_tree.keys()
             if tree_dict["Channel"] == "BOARD":
-                info = self.board_settings
+                info = self.xml_info.get_parameters()
             if tree_dict["Channel"] == "CH0":
-                info = self.xml_info.get_chn_parameters('0')
+                info = self.xml_info.get_chn_parameters(0)
             if tree_dict["Channel"] == "CH1":
-                info = self.xml_info.get_chn_parameters('1')
+                info = self.xml_info.get_chn_parameters(1)
             if tree_dict["Channel"] == "CH2":
-                info = self.xml_info.get_chn_parameters('2')
+                info = self.xml_info.get_chn_parameters(2)
             if tree_dict["Channel"] == "CH3":
-                info = self.xml_info.get_chn_parameters('3')
+                info = self.xml_info.get_chn_parameters(3)
             for param in param_keys:
                 if self.xml_types[key_1][param] == 'str':
                     param_tree[param] = info[key_2][self.xml_parameters[key_1][param]][0:-2]
@@ -1334,7 +1334,7 @@ class GUI(_root_reader):
         else:
             param_keys = param_tree.keys()
             if tree_dict["Channel"] == "BOARD":
-                info = self.board_settings
+                info = self.xml_info.get_parameters()
             if tree_dict["Channel"] == "CH0":
                 info = self.xml_info.get_chn_parameters(0)
             if tree_dict["Channel"] == "CH1":
