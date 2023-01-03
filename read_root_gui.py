@@ -216,14 +216,14 @@ class GUI(_root_reader):
                                      "2D Δt N channels":'str'},
                           "REJECTIONS":{"Saturation rejection":'bool',
                                         "Pileup rejection":'bool',
-                                        "E low cut":'float',
-                                        "E high cut":'float',
+                                        "E low cut":'str',
+                                        "E high cut":'str',
                                         "E cut enable":'bool',
-                                        "PSD low cut":'float',
-                                        "PSD high cut":'float',
+                                        "PSD low cut":'str',
+                                        "PSD high cut":'str',
                                         "PSD cut enable":'bool',
-                                        "Time intervals low cut":'float',
-                                        "Time intervals high cut":'float',
+                                        "Time intervals low cut":'str',
+                                        "Time intervals high cut":'str',
                                         "Time intervals cut enable":'bool'},
                           "ENERGY CALIBRATION":{"C0":'float',
                                                 "C1":'float',
@@ -541,7 +541,7 @@ class GUI(_root_reader):
         #REJECTIONS TAB
         rej_parameters = list(self.xml_parameters['REJECTIONS'].keys())
         for param in rej_parameters:
-            type_value= self.xml_types['REJECTIONS'][param]
+            type_value = self.xml_types['REJECTIONS'][param]
             self.rejection_tree.add_parameter(key=param, value=None, type=type_value, readonly=True)
 
         #ENERGY CALIBRATION TAB
@@ -653,6 +653,20 @@ class GUI(_root_reader):
         self.settings.connect_signal_changed('Plot Settings/Fill Color/HEX CODE', self.__hexfill__)
 
 
+
+        #TOF CUTS
+        self.TOF_CUT_TAB = self.TabArea.add_tab('TOF Cuts')
+        self.tofcuts = self.TOF_CUT_TAB.place_object(_g.TreeDictionary(name+'_settings.txt', name), 0, 0, alignment=0).set_width(275*self.ratio)
+
+        #First channel cut
+        self.tofcuts.add_parameter(key='First channel region/Low cut', type='str', value='0')
+        self.tofcuts.add_parameter(key='First channel region/High cut', type='str', value='0')
+
+        #Second channel cut
+        self.tofcuts.add_parameter(key='Second channel region/Low cut', type='str', value='0')
+        self.tofcuts.add_parameter(key='Second channel region/High cut', type='str', value='0')
+
+        self.tofcuts.add_parameter(key='Window', type='str', value='96', suffix='ns', siPrefix=True)
 
         #Graph Area
         self.TabAreaData = self.GRAPH.place_object(_g.TabArea(name+'_tabs_data.txt'), 1, 0, alignment=0)
@@ -947,8 +961,20 @@ class GUI(_root_reader):
                 self.PLT.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
                 self.PLT_RES.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
 
-            # if self.tree == "Data_R":
-                # data = _root_reader.__CPPTOF__(self, self.files_in_use[0], self.files_in_use[1])
+            if self.tree == "Data_R":
+                data = _root_reader.__CPPTOF__(self, self.files_in_use[0], self.files_in_use[1], float(self.tofcuts['First channel region/Low cut']), float(self.tofcuts['First channel region/High cut']), float(self.tofcuts['Second channel region/Low cut']), float(self.tofcuts['Second channel region/High cut']), int(self.tofcuts['Window']), float(self.settings['Plot Settings/Axes limits/x min']), float(self.settings['Plot Settings/Axes limits/x max']), int(self.spectra_tree['Start-stop Δt N channels']))
+
+                self.data['x'] = data[0]
+                self.data['y'] = data[1]
+
+                self.root_data = data[2]
+
+                self.__load_all__()
+                curve_name = self.settings['Plot Settings/Title'] + '-' + self.file_settings['Files Settings/Folder']
+            
+                self.PLT.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+                self.PLT_RES.plot(self.data['x'], self.data['y'], stepMode='center', fillLevel=0, brush=self.brush, pen=self.pen, name=curve_name)
+        
         elif self.PSDvsE_btn.is_checked():
             self.PSDvsE_BEFORE = True
             self.__clear__()
@@ -1014,6 +1040,10 @@ class GUI(_root_reader):
         indexes = _np.where((self.lower_bound<=self.data['x']) & (self.data['x']<=self.upper_bound))[0]
         if indexes[-1] == self.settings['Plot Settings/Axes limits/x max']:
             indexes = _np.delete(indexes, -1)
+        if len(indexes) >= len(self.data['y']):
+            diff = len(indexes) - len(self.data['y'])
+            for i in range(0, diff):
+                indexes = _np.delete(indexes, -1)
         values_range = self.data['y'][indexes]
         min_range = 0
         max_range = max(values_range)
@@ -1269,6 +1299,11 @@ class GUI(_root_reader):
         return root_files
 
 
+    def __get_cuts__(self, channel):
+        info = self.xml_info.get_chn_parameters(channel)
+        return info["REJECTIONS"][self.xml_parameters["REJECTIONS"]['E low cut']], info["REJECTIONS"][self.xml_parameters["REJECTIONS"]['E high cut']]
+
+
     def __load_channel_settings__(self, tree_dict, param_tree, key, *a):
         key_1 = key
         key_2 = key
@@ -1430,9 +1465,18 @@ class GUI(_root_reader):
         paths = [ch0_filepath, ch1_filepath, ch2_filepath, ch3_filepath]
 
         self.files_in_use = []
+        self.buttons_order = []
         for i in range(4):
             if states[i]:
                 self.files_in_use.append(paths[i])
+                self.buttons_order.append(i)
+
+        if len(self.files_in_use) == 1:
+            self.tofcuts['First channel region/Low cut'], self.tofcuts['First channel region/High cut'] = self.__get_cuts__(self.buttons_order[0])
+
+        if len(self.files_in_use) == 2:
+            self.tofcuts['First channel region/Low cut'], self.tofcuts['First channel region/High cut'] = self.__get_cuts__(self.buttons_order[0])
+            self.tofcuts['Second channel region/Low cut'], self.tofcuts['Second channel region/High cut'] = self.__get_cuts__(self.buttons_order[1])
 
         if ch0_state:
             self.file_label.set_text('CH0')

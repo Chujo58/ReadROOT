@@ -106,7 +106,7 @@ class _root_reader():
         """
         root_file = _ur.open(filepath)
         tree = root_file[tree]
-        keys = ['Channel', 'Timestamp', 'Board', 'Energy', 'EnergyShort']
+        keys = ['Channel', 'Timestamp', 'Board', 'Energy', 'EnergyShort', 'Flags']
         filtered_data = tree.arrays(keys, library='np')
         
         filtered_DF = _pd.DataFrame(filtered_data)
@@ -213,8 +213,11 @@ class _root_reader():
         ch0_unfiltered = self.get_unfiltered(ch0_data)
         ch1_unfiltered = self.get_unfiltered(ch1_data)
 
-        first_line = ch0_unfiltered['Timestamp'][self.data_in_range(ch0_unfiltered['Energy'], low_cut_0, high_cut_0)]
-        second_line = ch1_unfiltered['Timestamp'][self.data_in_range(ch1_unfiltered['Energy'], low_cut_1, high_cut_1)]
+        range_0 = list(self.data_in_range(ch0_unfiltered['Energy'], low_cut_0, high_cut_0)[0])
+        range_1 = list(self.data_in_range(ch1_unfiltered['Energy'], low_cut_1, high_cut_1)[0])
+
+        first_line = _np.array(ch0_unfiltered['Timestamp'].iloc[range_0]).astype(_np.int64)
+        second_line = _np.array(ch1_unfiltered['Timestamp'].iloc[range_1]).astype(_np.int64)
 
         start, stop = funcs.TOF(first_line, second_line, window)
 
