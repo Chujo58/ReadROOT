@@ -256,7 +256,6 @@ class GUIv2(root_reader):
         self.brushes = {}
         self.graph_info = {}
         self.previous_line = None
-        self.states = {}
 
         #Generate the top grid
         self.generate_top_grid()
@@ -572,7 +571,7 @@ class GUIv2(root_reader):
         self.plot_settings_dict.add_parameter("Histogram/Number of bins", value=0)
         # self.plot_settings_dict.add_parameter("Histogram/Fill Level Enable", value=False)
         self.plot_settings_dict.add_parameter("Histogram/Fill Level", value=0)
-        self.plot_settings_dict.add_parameter("Histogram/Mininum bin", value=0, tip="For TOF and Time histograms")
+        self.plot_settings_dict.add_parameter("Histogram/Minimum bin", value=0, tip="For TOF and Time histograms")
         self.plot_settings_dict.add_parameter("Histogram/Maximum bin", value=100, tip="For TOF and time histograms")
 
         #Make a collapsible zone
@@ -593,12 +592,14 @@ class GUIv2(root_reader):
         self.psd_btn.signal_toggled.connect(self.plot_graphs)
         
         self.time_btn = self.make_comp_btn(self.inner_left, "Plot the time histogram", "Images/TimeHist.png", column=1, row=3)
+        self.time_btn.signal_toggled.connect(self.plot_graphs)
 
         self.tof_btn = self.make_comp_btn(self.inner_left, "Plot the TOF (time of flight) histogram", "Images/TOFHist.png", column=1, row=4)
 
         self.psdvse_btn = self.make_comp_btn(self.inner_left, "Show the PSD vs Energy Histogram", "Images/PSDvsEnergyHist.png", column=1, row=5)
 
         self.mcs_btn = self.make_comp_btn(self.inner_left, "Plot the MCS graph", "Images/MCS Graph.png", column=1, row=6)
+        self.mcs_btn.signal_toggled.connect(self.plot_graphs)
 
 
         #Adding the databox and the plot
@@ -888,6 +889,11 @@ class GUIv2(root_reader):
             
             self.graph_info[line.name()] = {"type":"HIST","fill":self.plot_settings_dict["Histogram/Fill Level"]}
 
+        else:
+            line = self.plot.plot(x_data, y_data, pen=pen, name=self.plot_settings_dict["Line/Name"])
+
+            self.graph_info[line.name()] = {"type":"GRAPH","fill":None}
+
         self.lines[line.name()] = line
         self.pens[line.name()] = pen_data
         self.brushes[line.name()] = brush_data
@@ -916,10 +922,11 @@ class GUIv2(root_reader):
         else:
             return None
     
-    def plot_data(self, data):
+    def plot_data(self, data, type_: str):
         pen_data = list(self.plot_settings_dict["Line/Pen Color"].getRgb())
         brush_data = list(self.plot_settings_dict["Line/Brush Color"].getRgb())
         fill_level = self.plot_settings_dict["Histogram/Fill Level"]
+        step = "center"
         
         #Set the data in the databox
         self.databox["x"], self.databox["y"], root_data = data
@@ -927,7 +934,10 @@ class GUIv2(root_reader):
         if "No lines for now." in self.line_selector.get_all_items():
             pen = pg.mkPen(pen_data)
             brush = pg.mkBrush(brush_data)
-            line = self.plot.plot(data[0], data[1], stepMode="center", fillLevel=fill_level, brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
+            if type_ != "HIST": 
+                fill_level = None
+                step = None
+            line = self.plot.plot(data[0], data[1], stepMode=step, fillLevel=fill_level, brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
 
             
             #Add pen and brush to the selected dictionaries
@@ -935,8 +945,7 @@ class GUIv2(root_reader):
             self.lines[line.name()] = line
             self.pens[line.name()] = pen_data
             self.brushes[line.name()] = brush_data
-            self.graph_info[line.name()] = {"type":"HIST","fill":fill_level}
-            self.states[line.name()] = True
+            self.graph_info[line.name()] = {"type":type_,"fill":fill_level}
 
         elif self.line_selector.get_text() != self.plot_settings_dict["Line/Name"]:
             temp_pen_data = pen_data.copy()
@@ -946,34 +955,57 @@ class GUIv2(root_reader):
 
             pen = pg.mkPen(temp_pen_data)
             brush = pg.mkBrush(temp_brush_data)
-            line = self.plot.plot(data[0], data[1], stepMode="center", fillLevel=fill_level, brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
+            if type_ != "HIST": 
+                fill_level = None
+                step = None
+            line = self.plot.plot(data[0], data[1], stepMode=step, fillLevel=fill_level, brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
 
             self.lines[line.name()] = line
             self.pens[line.name()] = pen_data
             self.brushes[line.name()] = brush_data
-            self.graph_info[line.name()] = {"type":"HIST","fill":fill_level}
-            self.states[line.name()] = False
+            self.graph_info[line.name()] = {"type":type_,"fill":fill_level}
 
     def plot_graphs(self, *a):
+        btn_checked = self.what_btn_is_checked()
         if self.energy_btn.is_checked():
-            self.plot_settings_dict["Line/Name"] = f"Energy Histogram - CH{self.what_btn_is_checked()}"
+            self.plot_settings_dict["Line/Name"] = f"Energy Histogram - CH{btn_checked}"
             
-            file_to_use = self.buttons_files.get(str(self.what_btn_is_checked()))
+            file_to_use = self.buttons_files.get(str(btn_checked))
             data = self.__energyhist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Number of bins"], self.tree)
 
-            self.plot_data(data)  
+            self.plot_data(data, "HIST")
             self.energy_btn.set_checked(False)     
             return   
 
 
         if self.psd_btn.is_checked():
-            self.plot_settings_dict["Line/Name"] = f"PSD Histogram - CH{self.what_btn_is_checked()}"
+            self.plot_settings_dict["Line/Name"] = f"PSD Histogram - CH{btn_checked}"
 
-            file_to_use = self.buttons_files.get(str(self.what_btn_is_checked()))
+            file_to_use = self.buttons_files.get(str(btn_checked))
             data = self.__psdhist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Number of bins"], self.tree)
 
-            self.plot_data(data)
+            self.plot_data(data, "HIST")
             self.psd_btn.set_checked(False)
+            return
+
+        if self.time_btn.is_checked():
+            self.plot_settings_dict["Line/Name"] = f"Time Histogram - CH{btn_checked}"
+
+            file_to_use = self.buttons_files.get(str(btn_checked))
+            data = self.__timehist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"], self.tree)
+
+            self.plot_data(data, "HIST")
+            self.time_btn.set_checked(False)
+            return
+        
+        if self.mcs_btn.is_checked():
+            self.plot_settings_dict["Line/Name"] = f"MCS Graph - CH{btn_checked}"
+
+            file_to_use = self.buttons_files.get(str(btn_checked))
+            data = self.__MCSgraph__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.tree)
+
+            self.plot_data(data, "GRAPH")
+            self.mcs_btn.set_checked(False)
             return
 
         plotted_items_names = [item.name() for item in self.plot.listDataItems()]
