@@ -1521,15 +1521,15 @@ class GUI(_root_reader):
                         self.file_label.set_text('No file selected')
 
 
-if __name__ == '__main__':
-    module_list = ['cppimport', 'pybind11', 'uproot', 'pyqtgraph=0.12.4', 'darkdetect', 'numpy', 'pandas','PyQt5']
-    print(bcolors.WARNING + "Please make sure that the following modules are installed on your machine." + bcolors.ENDC)
-    for module in module_list:
-        if module != module_list[-1]:
-            print(module, end=', ')
-        else:
-            print(module)
-    print(bcolors.WARNING + "Also note that you can use raw ROOT files directly to calculate the TOF." + bcolors.ENDC)
-    time.sleep(2)
-    running_from_main = True
-    self = GUI()
+# if __name__ == '__main__':
+#     module_list = ['cppimport', 'pybind11', 'uproot', 'pyqtgraph=0.12.4', 'darkdetect', 'numpy', 'pandas','PyQt5']
+#     print(bcolors.WARNING + "Please make sure that the following modules are installed on your machine." + bcolors.ENDC)
+#     for module in module_list:
+#         if module != module_list[-1]:
+#             print(module, end=', ')
+#         else:
+#             print(module)
+#     print(bcolors.WARNING + "Also note that you can use raw ROOT files directly to calculate the TOF." + bcolors.ENDC)
+#     time.sleep(2)
+#     running_from_main = True
+#     self = GUI()

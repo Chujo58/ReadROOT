@@ -193,7 +193,7 @@ class XMLParser:
                 label = entry.find('value').text
                 break
         else: # I'm a genius. Don't mind me using disgusting functions in python.
-            label = "CH"
+            label = "CH" #This is executed if the loop ends normally (so without encountering the break above.)
         # keys = channel_to_check.findall('values/entry/key')
         # values = channel_to_check.findall('values/entry/value')
         # if len(keys) == 0 and len(values) == 0:

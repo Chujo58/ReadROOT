@@ -14,7 +14,10 @@ import os as _os
 # print(_os.listdir())
 
 import cppimport
-funcs = cppimport.imp("wrap")
+try:
+    funcs = cppimport.imp("wrap")
+except:
+    funcs = cppimport.imp_from_filepath("wrap.cpp")
 # from scipy import asarray as ar,exp
 
 

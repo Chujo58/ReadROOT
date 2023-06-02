@@ -1,5 +1,5 @@
 #include "funcs.hpp"
-#include "C:\Users\chloe\AppData\Local\Programs\Python\Python310\lib\site-packages\pybind11\include\pybind11\pybind11.h"
+#include "C:\Users\chloe\AppData\Local\Programs\Python\Python311\Lib\site-packages\pybind11\include\pybind11\pybind11.h"
 
 namespace py = pybind11;
 
