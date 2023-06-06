@@ -19,6 +19,7 @@ class XMLParser:
         self.reformatted = ['SRV_PARAM_CH_POLARITY','SRV_PARAM_CH_BLINE_NSMEAN','HARDWARE_COINCIDENCE','SRV_PARAM_START_MODE','SRV_PARAM_CH_SPECTRUM_NBINS','SRV_PARAM_CH_INDYN','SRV_PARAM_CH_CFD_FRACTION','SRV_PARAM_CH_DISCR_MODE','SRV_PARAM_CH_ENERGY_COARSE_GAIN','SRV_PARAM_TRGOUT_MODE']
         self.reformatted_keys = ['polarity', 'baseline', 'coincidence', 'start', 'ebins', 'input_range', 'cfd', 'discriminator', 'coarse_gain', 'trig_out']
         self.formatted = 0
+        self.board_formatted = False
 
     def get_board_properties(self):
         root = ET.parse(self.file).getroot()
@@ -145,6 +146,7 @@ class XMLParser:
                     self.parameters[tab][key] = value
                     #else:
                         #self.parameters[tab][key] = [value, units]
+        self.formatted = 0
         self.reformat(['all'])
         
         return self.parameters
@@ -179,7 +181,9 @@ class XMLParser:
                         values[index].text = (True if values[index].text == 'true' else False)
                     else:
                         self.parameters[group][key.text] = values[index].text
-        self.reformat(list_format)
+        
+        # self.formatted = 0
+        # self.reformat(list_format)
         return self.parameters
 
     def get_ch_label(self, chn_number: str):

@@ -235,7 +235,7 @@ class GUIv2(root_reader):
         window = g.Window(name, size=[width, height], autosettings_path=name+"_window.txt")
         window._window.setWindowIcon(QtGui.QIcon("Images/CoMPASS/icon64x64.ico"))
 
-        self.TopGrid = window.place_object(g.GridLayout(True)).set_height(50*self.ratio)#.set_width(1273*self.ratio)
+        self.TopGrid = window.place_object(g.GridLayout(True)).set_height(52*self.ratio)#.set_width(1273*self.ratio)
         window.new_autorow()
         self.BotGrid = window.place_object(g.GridLayout(True), alignment=0)
         
@@ -250,12 +250,13 @@ class GUIv2(root_reader):
         self.TopGrid.set_margins(self.margins)
         self.BotGrid.set_margins(self.margins)
 
-        #This is for the lines, pens and brushes.
+        #This is for the lines, pens, brushes, graph types and root data.
         self.lines = {"No lines for now.":None}
         self.pens = {}
         self.brushes = {}
         self.graph_info = {}
         self.previous_line = None
+        self.data = {}
 
         #Generate the top grid
         self.generate_top_grid()
@@ -375,6 +376,9 @@ class GUIv2(root_reader):
         temp_palette.setColor(self.inner_left._widget.backgroundRole(), accent)
         self.inner_left._widget.setPalette(temp_palette)
 
+        #Load all the settings for the graphs:
+        self.load_graph_options()
+
         s.settings["dark_theme_qt"] = self.dark_theme_on
 
         if show: window.show(block)
@@ -427,6 +431,7 @@ class GUIv2(root_reader):
 
     def generate_bot_grid(self):
         main_tab_area = self.BotGrid.place_object(g.TabArea(), alignment=0)
+        main_tab_area._widget.setTabsClosable(False) #To not pop out the tabs by accident. This removes the icons if done.
         self.compass_tab = main_tab_area.add_tab("CoMPASS")
         self.graph_tab = main_tab_area.add_tab("GRAPH")
 
@@ -469,6 +474,7 @@ class GUIv2(root_reader):
         self.compass_tab.new_autorow()
 
         embed_compass_tab_area = self.compass_tab.place_object(g.TabArea(),alignment=0,column_span=3)
+        embed_compass_tab_area._widget.setTabsClosable(False) #Same as before if they pop out the icons are gone.
         #Create the new tabs
         input_tab = embed_compass_tab_area.add_tab("INPUT")
         disc_tab = embed_compass_tab_area.add_tab("DISCRIMINATOR")
@@ -532,47 +538,9 @@ class GUIv2(root_reader):
         delete_btn.set_style_unchecked(style="image: url(Images/delete.png)")
         delete_btn.signal_clicked.connect(self.delete)
 
-        self.plot_settings_dict = grid_bot.place_object(g.TreeDictionary(autosettings_path="GUIv2_plot_dict.txt"),alignment=0).set_width(295*self.ratio)
-        self.plot_settings_dict._widget.setHeaderLabels(["Parameters slight long","Value"])
-
-        self.plot_settings_dict.add_parameter("General Settings/Title", value=" ")
-        self.plot_settings_dict.connect_signal_changed("General Settings/Title", self.change_title)
-        self.plot_settings_dict.add_parameter("General Settings/Legend", value=False)
-        self.plot_settings_dict.connect_signal_changed("General Settings/Legend", self.change_legend)
-        
-        self.plot_settings_dict.add_parameter("Line/Name",value=" ")
-        add_color(self.plot_settings_dict, "Line/Pen Color",True)
-        add_color(self.plot_settings_dict, "Line/Brush Color",True)
-
-        self.plot_settings_dict.add_parameter("Grid/X Axis",value=True)
-        self.plot_settings_dict.connect_signal_changed("Grid/X Axis", self.change_grid)
-        self.plot_settings_dict.add_parameter("Grid/Y Axis",value=True)
-        self.plot_settings_dict.connect_signal_changed("Grid/Y Axis", self.change_grid)
-
-        self.plot_settings_dict.add_parameter("Axis/X Label", value=" ")
-        self.plot_settings_dict.connect_signal_changed("Axis/X Label", self.change_labels)
-        self.plot_settings_dict.add_parameter("Axis/Y Label", value=" ")
-        self.plot_settings_dict.connect_signal_changed("Axis/Y Label", self.change_labels)
-
-        self.plot_settings_dict.add_parameter("Axis/X Log Scale", value=False)
-        self.plot_settings_dict.connect_signal_changed("Axis/X Log Scale", self.change_log)
-        self.plot_settings_dict.add_parameter("Axis/Y Log Scale", value=False)
-        self.plot_settings_dict.connect_signal_changed("Axis/Y Log Scale", self.change_log)
-
-        self.plot_settings_dict.add_parameter("Axis/Min X",value=0)
-        self.plot_settings_dict.connect_signal_changed("Axis/Min X", self.change_min_max)
-        self.plot_settings_dict.add_parameter("Axis/Max X",value=100)
-        self.plot_settings_dict.connect_signal_changed("Axis/Max X", self.change_min_max)
-        self.plot_settings_dict.add_parameter("Axis/Min Y",value=0)
-        self.plot_settings_dict.connect_signal_changed("Axis/Min Y", self.change_min_max)
-        self.plot_settings_dict.add_parameter("Axis/Max Y",value=100)
-        self.plot_settings_dict.connect_signal_changed("Axis/Max Y", self.change_min_max)
-
-        self.plot_settings_dict.add_parameter("Histogram/Number of bins", value=0)
-        # self.plot_settings_dict.add_parameter("Histogram/Fill Level Enable", value=False)
-        self.plot_settings_dict.add_parameter("Histogram/Fill Level", value=0)
-        self.plot_settings_dict.add_parameter("Histogram/Minimum bin", value=0, tip="For TOF and Time histograms")
-        self.plot_settings_dict.add_parameter("Histogram/Maximum bin", value=100, tip="For TOF and time histograms")
+        #Make a collapsible zone for hte plot settings
+        plot_collapsible = grid_bot.place_object(superqt.QCollapsible("Plot Settings",expandedIcon=QtGui.QIcon("Images/expanded.png"),collapsedIcon=QtGui.QIcon("Images/collapsed.png")))
+        self.make_plot_settings(plot_collapsible)
 
         #Make a collapsible zone
         grid_bot.new_autorow()
@@ -610,29 +578,115 @@ class GUIv2(root_reader):
         plot_region.setBackground("black") if self.dark_theme_on else plot_region.setBackground("white")
         self.plot = plot_region.getPlotItem()
 
+    def make_plot_settings(self, parent):
+        collapsible_grid_layout = g.GridLayout(False)
+
+        self.plot_settings_dict = collapsible_grid_layout.place_object(g.TreeDictionary(autosettings_path="GUIv2_plot_dict.txt"),alignment=0).set_width(275*self.ratio)
+        self.plot_settings_dict._widget.setHeaderLabels(["Parameters slight long","Value"])
+
+        self.plot_settings_dict.add_parameter("General Settings/Title", value=" ")
+        self.plot_settings_dict.connect_signal_changed("General Settings/Title", self.change_title)
+        self.plot_settings_dict.add_parameter("General Settings/Legend", value=False)
+        self.plot_settings_dict.connect_signal_changed("General Settings/Legend", self.change_legend)
+        
+        self.plot_settings_dict.add_parameter("Line/Name",value=" ")
+        add_color(self.plot_settings_dict, "Line/Pen Color",True)
+        add_color(self.plot_settings_dict, "Line/Brush Color",True)
+
+        self.plot_settings_dict.add_parameter("Grid/X Axis",value=True)
+        self.plot_settings_dict.connect_signal_changed("Grid/X Axis", self.change_grid)
+        self.plot_settings_dict.add_parameter("Grid/Y Axis",value=True)
+        self.plot_settings_dict.connect_signal_changed("Grid/Y Axis", self.change_grid)
+
+        self.plot_settings_dict.add_parameter("Axis/X Label", value=" ")
+        self.plot_settings_dict.connect_signal_changed("Axis/X Label", self.change_labels)
+        self.plot_settings_dict.add_parameter("Axis/Y Label", value=" ")
+        self.plot_settings_dict.connect_signal_changed("Axis/Y Label", self.change_labels)
+
+        self.plot_settings_dict.add_parameter("Axis/X Log Scale", value=False)
+        self.plot_settings_dict.connect_signal_changed("Axis/X Log Scale", self.change_log)
+        self.plot_settings_dict.add_parameter("Axis/Y Log Scale", value=False)
+        self.plot_settings_dict.connect_signal_changed("Axis/Y Log Scale", self.change_log)
+
+        self.plot_settings_dict.add_parameter("Axis/Min X",value=0)
+        self.plot_settings_dict.connect_signal_changed("Axis/Min X", self.change_min_max)
+        self.plot_settings_dict.add_parameter("Axis/Max X",value=100)
+        self.plot_settings_dict.connect_signal_changed("Axis/Max X", self.change_min_max)
+        self.plot_settings_dict.add_parameter("Axis/Min Y",value=0)
+        self.plot_settings_dict.connect_signal_changed("Axis/Min Y", self.change_min_max)
+        self.plot_settings_dict.add_parameter("Axis/Max Y",value=100)
+        self.plot_settings_dict.connect_signal_changed("Axis/Max Y", self.change_min_max)
+
+        self.plot_settings_dict.add_parameter("Histogram/Number of bins", value=100)
+        self.plot_settings_dict.connect_signal_changed("Histogram/Number of bins", self.change_bin_number)
+        self.plot_settings_dict.add_parameter("Histogram/Fill Level", value=0)
+        self.plot_settings_dict.add_parameter("Histogram/Minimum bin", value=0, tip="For TOF and Time histograms")
+        self.plot_settings_dict.add_parameter("Histogram/Maximum bin", value=100, tip="For TOF and time histograms")
+
+        parent.addWidget(collapsible_grid_layout._widget)
+        parent.expand()
+
     def make_collapsible_section(self, parent):
-        label_start = g.Label("Start channel range: ")
-        self.start_range_hslider = superqt.QLabeledRangeSlider(Horizontal)
+        collapse_grid_layout = g.GridLayout(False)
+        self.old_stop_range = 500
+
+        light_theme = """
+            QPushButton{
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(120,225,252), stop:1 rgb(119,119,170));
+            }
+            QPushButton:checked {
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(61,145,169), stop:1 rgb(78,78,128));
+                color: white;
+            }
+            QPushButton:hover{
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(111,205,231), stop:1 rgb(104,104,161));
+            }
+        """
+
+        self.cpp_tof_btn = collapse_grid_layout.place_object(g.Button("Use C++ TOF functions", checkable=True)).set_width(275*self.ratio)
+        self.cpp_tof_btn._widget.setStyleSheet(light_theme)
+        collapse_grid_layout.new_autorow()
+
+        label_start = collapse_grid_layout.place_object(g.Label("Start channel range: "))
+        collapse_grid_layout.new_autorow()
+
+        self.start_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
         self.start_range_hslider.setMinimumWidth(275*self.ratio)
         self.start_range_hslider.setMinimumHeight(40*self.ratio)
         self.start_range_hslider.setStyleSheet(self.QSS_dark) if self.dark_theme_on else self.start_range_hslider.setStyleSheet(self.QSS_light)
         self.start_range_hslider.setValue((0,80))
-        self.start_range_hslider.setRange(0,500)
+        self.start_range_hslider.setRange(0,self.old_stop_range)
         self.start_range_hslider.show()
 
-        label_stop = g.Label("Stop channel range: ")
-        self.stop_range_hslider = superqt.QLabeledRangeSlider(Horizontal)
+        collapse_grid_layout.new_autorow()
+
+        label_stop = collapse_grid_layout.place_object(g.Label("Stop channel range: "))
+        collapse_grid_layout.new_autorow()
+
+        self.stop_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
         self.stop_range_hslider.setMinimumWidth(275*self.ratio)
         self.stop_range_hslider.setMinimumHeight(40*self.ratio)
         self.stop_range_hslider.setStyleSheet(self.QSS_dark) if self.dark_theme_on else self.stop_range_hslider.setStyleSheet(self.QSS_light)
         self.stop_range_hslider.setValue((0,80))
-        self.stop_range_hslider.setRange(0,500)
+        self.stop_range_hslider.setRange(0,self.old_stop_range)
         self.stop_range_hslider.show()
+
+        collapse_grid_layout.new_autorow()
+
+        window_label = collapse_grid_layout.place_object(g.Label("Window time: "))
+        # collapse_grid_layout.new_autorow()
+
+        self.time_range = collapse_grid_layout.place_object(superqt.QQuantity("10us"))
+        self.time_range.setDecimals(2)
+        self.time_range.show()
         
-        parent.addWidget(label_start._widget)
-        parent.addWidget(self.start_range_hslider)
-        parent.addWidget(label_stop._widget)
-        parent.addWidget(self.stop_range_hslider)
+        parent.addWidget(collapse_grid_layout._widget)
 
     def make_comp_btn(self, parent, tip_text, url_image, **kwargs):
         btn = parent.place_object(g.Button(" ", checkable=True, tip=tip_text), alignment=0, **kwargs).set_height(35*self.ratio).set_width(35*self.ratio)
@@ -802,6 +856,15 @@ class GUIv2(root_reader):
         if self.ch3_btn.is_checked() and self.previous_btn != self.ch3_btn:
             self.toggle_others_out(self.ch3_btn, buttons_list)
             self.previous_btn = self.ch3_btn
+
+    def load_graph_options(self):
+        self.change_title()
+        self.change_legend()
+        self.change_grid()
+        self.change_labels()
+        self.change_log()
+        self.change_min_max()
+        self.change_bin_number()
                 
     def change_title(self, *a):
         self.plot.setLabels(title=self.plot_settings_dict["General Settings/Title"])
@@ -809,8 +872,8 @@ class GUIv2(root_reader):
     def change_legend(self, *a):
         if self.plot_settings_dict["General Settings/Legend"]:
             self.legend = self.plot.addLegend()
-        # else:
-        #     self.plot.removeItem(self.legend)
+        else:
+            self.plot.removeItem(self.legend)
     
     def change_grid(self, *a):
         self.plot.showGrid(x=self.plot_settings_dict["Grid/X Axis"], y=self.plot_settings_dict["Grid/Y Axis"])
@@ -825,6 +888,24 @@ class GUIv2(root_reader):
     def change_min_max(self, *a):
         self.plot.setXRange(self.plot_settings_dict["Axis/Min X"], self.plot_settings_dict["Axis/Max X"])
         self.plot.setYRange(self.plot_settings_dict["Axis/Min Y"], self.plot_settings_dict["Axis/Max Y"])
+
+    def change_bin_number(self, *a):
+        #Get the old values
+        old_start_values = np.array(self.start_range_hslider.value())
+        old_stop_values = np.array(self.stop_range_hslider.value())
+        new_stop_range = self.plot_settings_dict["Histogram/Number of bins"]
+        
+        ratio = new_stop_range/self.old_stop_range
+
+        #Calculate the new values
+        new_start_values = tuple(old_start_values*ratio)
+        new_stop_values = tuple(old_stop_values*ratio)
+
+        self.start_range_hslider.setRange(0, new_stop_range)
+        self.start_range_hslider.setValue(new_start_values)
+        self.stop_range_hslider.setRange(0, self.plot_settings_dict["Histogram/Number of bins"])
+        self.stop_range_hslider.setValue(new_stop_values)
+        self.old_stop_range = new_stop_range
 
     def change_line_highlight(self, *a):
         line_selected = self.line_selector.get_text()
@@ -857,8 +938,20 @@ class GUIv2(root_reader):
 
         self.previous_line = line_selected
 
+    def get_bin_range(self, graph_type):
+        match graph_type:
+            case "PSD":
+                return (0,1)
+            case "TIME":
+                return (self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"])
+            case "TOF":
+                return (self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"])
+            case _:
+                return
+
     def save_changes(self, *a):
         line_selected = self.line_selector.get_text()
+        ranged_hist = ["PSD","TIME","TOF"]
         #Check for a No lines for now:
         if "No lines for now." in self.line_selector.get_all_items():
             index = self.line_selector.get_index("No lines for now.")
@@ -866,7 +959,12 @@ class GUIv2(root_reader):
 
         #Get the data for the line:
         x_data, y_data = self.lines[line_selected].getData()
+        raw_data = self.data[line_selected]
+        #Get the type and style of line we plot:
+        style = self.graph_info[line_selected].get("style")
         type_ = self.graph_info[line_selected].get("type")
+        #Get the number of bins in use:
+        bins = self.plot_settings_dict["Histogram/Number of bins"]
 
         #Remove the line:
         self.plot.removeItem(self.lines[line_selected])
@@ -884,15 +982,22 @@ class GUIv2(root_reader):
         brush = pg.mkBrush(brush_data)
 
         #Plot the line again:
-        if type_ == "HIST":
-            line = self.plot.plot(x_data, y_data, stepMode="center", fillLevel=self.plot_settings_dict["Histogram/Fill Level"], brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
+        if style == "HIST":
+            bin_range = (0,bins)
+            if type_ in ranged_hist:
+                bin_range = self.get_bin_range(type_)
+
+            hist = np.histogram(raw_data, bins=bins, range=bin_range)
+            x = hist[1]
+            y = hist[0]
+            line = self.plot.plot(x, y, stepMode="center", fillLevel=self.plot_settings_dict["Histogram/Fill Level"], brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
             
-            self.graph_info[line.name()] = {"type":"HIST","fill":self.plot_settings_dict["Histogram/Fill Level"]}
+            self.graph_info[line.name()] = {"style":"HIST","fill":self.plot_settings_dict["Histogram/Fill Level"],"type":type_}
 
         else:
             line = self.plot.plot(x_data, y_data, pen=pen, name=self.plot_settings_dict["Line/Name"])
 
-            self.graph_info[line.name()] = {"type":"GRAPH","fill":None}
+            self.graph_info[line.name()] = {"style":"GRAPH","fill":None,"type":type_}
 
         self.lines[line.name()] = line
         self.pens[line.name()] = pen_data
@@ -922,7 +1027,7 @@ class GUIv2(root_reader):
         else:
             return None
     
-    def plot_data(self, data, type_: str):
+    def plot_data(self, data, type_: str, button: str):
         pen_data = list(self.plot_settings_dict["Line/Pen Color"].getRgb())
         brush_data = list(self.plot_settings_dict["Line/Brush Color"].getRgb())
         fill_level = self.plot_settings_dict["Histogram/Fill Level"]
@@ -945,7 +1050,8 @@ class GUIv2(root_reader):
             self.lines[line.name()] = line
             self.pens[line.name()] = pen_data
             self.brushes[line.name()] = brush_data
-            self.graph_info[line.name()] = {"type":type_,"fill":fill_level}
+            self.graph_info[line.name()] = {"style":type_,"fill":fill_level,"type":button}
+            self.data[line.name()] = root_data
 
         elif self.line_selector.get_text() != self.plot_settings_dict["Line/Name"]:
             temp_pen_data = pen_data.copy()
@@ -963,7 +1069,8 @@ class GUIv2(root_reader):
             self.lines[line.name()] = line
             self.pens[line.name()] = pen_data
             self.brushes[line.name()] = brush_data
-            self.graph_info[line.name()] = {"type":type_,"fill":fill_level}
+            self.graph_info[line.name()] = {"style":type_,"fill":fill_level,"type":button}
+            self.data[line.name()] = root_data
 
     def plot_graphs(self, *a):
         btn_checked = self.what_btn_is_checked()
@@ -973,7 +1080,7 @@ class GUIv2(root_reader):
             file_to_use = self.buttons_files.get(str(btn_checked))
             data = self.__energyhist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Number of bins"], self.tree)
 
-            self.plot_data(data, "HIST")
+            self.plot_data(data, "HIST","ENERGY")
             self.energy_btn.set_checked(False)     
             return   
 
@@ -984,7 +1091,7 @@ class GUIv2(root_reader):
             file_to_use = self.buttons_files.get(str(btn_checked))
             data = self.__psdhist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Number of bins"], self.tree)
 
-            self.plot_data(data, "HIST")
+            self.plot_data(data, "HIST","PSD")
             self.psd_btn.set_checked(False)
             return
 
@@ -994,7 +1101,7 @@ class GUIv2(root_reader):
             file_to_use = self.buttons_files.get(str(btn_checked))
             data = self.__timehist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"], self.tree)
 
-            self.plot_data(data, "HIST")
+            self.plot_data(data, "HIST","TIME")
             self.time_btn.set_checked(False)
             return
         
@@ -1004,7 +1111,7 @@ class GUIv2(root_reader):
             file_to_use = self.buttons_files.get(str(btn_checked))
             data = self.__MCSgraph__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.tree)
 
-            self.plot_data(data, "GRAPH")
+            self.plot_data(data, "GRAPH","MCS")
             self.mcs_btn.set_checked(False)
             return
 
