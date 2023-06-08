@@ -38,7 +38,7 @@ from scipy.optimize import curve_fit as cf
 from . import ErrorPropagation as ep
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import cm
-import superqt
+import superqt, time
 
 g = egg.gui
 
@@ -222,7 +222,7 @@ def removeItem(combo_box: g.ComboBox, name: str):
     combo_box.remove_item(index_to_remove)
 
 class GUIv2(root_reader):
-    def __init__(self, name="GUIv2", window_size=[1000,500], show=True, block=True, ratio=None):
+    def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True):
         self.ratio = int(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
         self.dark_theme_on = not dd.isDark()
         self.margins = int(10/3*self.ratio)
@@ -381,6 +381,7 @@ class GUIv2(root_reader):
 
         s.settings["dark_theme_qt"] = self.dark_theme_on
 
+        if full_screen: window._window.showMaximized()
         if show: window.show(block)
     
     def get_screen_resolution(self):
@@ -407,25 +408,10 @@ class GUIv2(root_reader):
         self.folder_label = self.TopGrid.place_object(g.Label("No folder selected!"))
 
         #Channel Buttons
-        self.ch0_btn = self.TopGrid.place_object(g.Button(" ", True,tip="Channel 0")).set_width(45*self.ratio).set_height(45*self.ratio)
-        self.ch0_btn.set_style_unchecked(style="image: url(Images/Off0.png)")
-        self.ch0_btn.set_style_checked(style="image: url(Images/On0.png); border: 2px solid rgb(1,196,255); background: rgb(54,54,54)") if self.dark_theme_on else self.ch0_btn.set_style_checked(style="image: url(Images/On0.png); border: 2px solid rgb(1,196,255); background: rgb(220,220,220)")
-        self.ch0_btn.signal_toggled.connect(self.channel_toggling)
-
-        self.ch1_btn = self.TopGrid.place_object(g.Button(" ", True,tip="Channel 1")).set_width(45*self.ratio).set_height(45*self.ratio)
-        self.ch1_btn.set_style_unchecked(style="image: url(Images/Off1.png)")
-        self.ch1_btn.set_style_checked(style="image: url(Images/On1.png); border: 2px solid rgb(1,196,255); background: rgb(54,54,54)") if self.dark_theme_on else self.ch1_btn.set_style_checked(style="image: url(Images/On1.png); border: 2px solid rgb(1,196,255); background: rgb(220,220,220)")
-        self.ch1_btn.signal_toggled.connect(self.channel_toggling)
-
-        self.ch2_btn = self.TopGrid.place_object(g.Button(" ", True,tip="Channel 2")).set_width(45*self.ratio).set_height(45*self.ratio)
-        self.ch2_btn.set_style_unchecked(style="image: url(Images/Off2.png)")
-        self.ch2_btn.set_style_checked(style="image: url(Images/On2.png); border: 2px solid rgb(1,196,255); background: rgb(54,54,54)") if self.dark_theme_on else self.ch2_btn.set_style_checked(style="image: url(Images/On2.png); border: 2px solid rgb(1,196,255); background: rgb(220,220,220)")
-        self.ch2_btn.signal_toggled.connect(self.channel_toggling)
-
-        self.ch3_btn = self.TopGrid.place_object(g.Button(" ", True,tip="Channel 3")).set_width(45*self.ratio).set_height(45*self.ratio)
-        self.ch3_btn.set_style_unchecked(style="image: url(Images/Off3.png)")
-        self.ch3_btn.set_style_checked(style="image: url(Images/On3.png); border: 2px solid rgb(1,196,255); background: rgb(54,54,54)") if self.dark_theme_on else self.ch3_btn.set_style_checked(style="image: url(Images/On3.png); border: 2px solid rgb(1,196,255); background: rgb(220,220,220)")
-        self.ch3_btn.signal_toggled.connect(self.channel_toggling)
+        self.ch0_btn = self.make_channel_btn(self.TopGrid, "0", 45, self.channel_toggling)
+        self.ch1_btn = self.make_channel_btn(self.TopGrid, "1", 45, self.channel_toggling)
+        self.ch2_btn = self.make_channel_btn(self.TopGrid, "2", 45, self.channel_toggling)
+        self.ch3_btn = self.make_channel_btn(self.TopGrid, "3", 45, self.channel_toggling)
 
         self.TopGrid.place_object(g.GridLayout()).set_width(680*self.ratio)
 
@@ -538,7 +524,7 @@ class GUIv2(root_reader):
         delete_btn.set_style_unchecked(style="image: url(Images/delete.png)")
         delete_btn.signal_clicked.connect(self.delete)
 
-        #Make a collapsible zone for hte plot settings
+        #Make a collapsible zone for the plot settings
         plot_collapsible = grid_bot.place_object(superqt.QCollapsible("Plot Settings",expandedIcon=QtGui.QIcon("Images/expanded.png"),collapsedIcon=QtGui.QIcon("Images/collapsed.png")))
         self.make_plot_settings(plot_collapsible)
 
@@ -563,6 +549,7 @@ class GUIv2(root_reader):
         self.time_btn.signal_toggled.connect(self.plot_graphs)
 
         self.tof_btn = self.make_comp_btn(self.inner_left, "Plot the TOF (time of flight) histogram", "Images/TOFHist.png", column=1, row=4)
+        self.tof_btn.signal_toggled.connect(self.plot_graphs)
 
         self.psdvse_btn = self.make_comp_btn(self.inner_left, "Show the PSD vs Energy Histogram", "Images/PSDvsEnergyHist.png", column=1, row=5)
 
@@ -630,6 +617,10 @@ class GUIv2(root_reader):
         collapse_grid_layout = g.GridLayout(False)
         self.old_stop_range = 500
 
+        self.previous_start_btn = None
+        self.previous_stop_btn = None
+ 
+
         light_theme = """
             QPushButton{
                 border: 2px solid rgb(193,193,193);
@@ -679,13 +670,46 @@ class GUIv2(root_reader):
 
         collapse_grid_layout.new_autorow()
 
-        window_label = collapse_grid_layout.place_object(g.Label("Window time: "))
+        window_label = collapse_grid_layout.place_object(g.Label("Window time: ")).set_width(75*self.ratio)
         # collapse_grid_layout.new_autorow()
 
         self.time_range = collapse_grid_layout.place_object(superqt.QQuantity("10us"))
         self.time_range.setDecimals(2)
         self.time_range.show()
+
+        collapse_grid_layout.new_autorow()
+
+        start_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0,column_span=2)
+        start_button_grid.place_object(g.Label("Start channel: ")).set_width(75*self.ratio)
+
+        self.ch0_start_btn = self.make_channel_btn(start_button_grid, "0", 30, self.start_channel_toggling)
+        self.ch1_start_btn = self.make_channel_btn(start_button_grid, "1", 30, self.start_channel_toggling)
+        self.ch2_start_btn = self.make_channel_btn(start_button_grid, "2", 30, self.start_channel_toggling)
+        self.ch3_start_btn = self.make_channel_btn(start_button_grid, "3", 30, self.start_channel_toggling)
+
+        collapse_grid_layout.new_autorow()
+        line = QtWidgets.QFrame()
+        line.setMinimumWidth(275*self.ratio)
+        line.setFixedHeight(1)
+        line.setFrameShape(QtWidgets.QFrame.HLine)
+        line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        line.setStyleSheet("border:5px solid black")
+        collapse_grid_layout.place_object(line)
+        collapse_grid_layout.new_autorow()
+
+        stop_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
+        stop_button_grid.place_object(g.Label("Stop channel: ")).set_width(75*self.ratio)
+
+        self.ch0_stop_btn = self.make_channel_btn(stop_button_grid, "0", 30, self.stop_channel_toggling)
+        self.ch1_stop_btn = self.make_channel_btn(stop_button_grid, "1", 30, self.stop_channel_toggling)
+        self.ch2_stop_btn = self.make_channel_btn(stop_button_grid, "2", 30, self.stop_channel_toggling)
+        self.ch3_stop_btn = self.make_channel_btn(stop_button_grid, "3", 30, self.stop_channel_toggling)
         
+        #List of the buttons:
+        self.buttons_list = [self.ch0_btn, self.ch1_btn, self.ch2_btn, self.ch3_btn]
+        self.start_buttons_list = [self.ch0_start_btn, self.ch1_start_btn, self.ch2_start_btn, self.ch3_start_btn]
+        self.stop_buttons_list = [self.ch0_stop_btn, self.ch1_stop_btn, self.ch2_stop_btn, self.ch3_stop_btn]
+
         parent.addWidget(collapse_grid_layout._widget)
 
     def make_comp_btn(self, parent, tip_text, url_image, **kwargs):
@@ -693,6 +717,32 @@ class GUIv2(root_reader):
         btn.set_style_checked(style=f"image: url({url_image}); border: 2px solid rgb(1,196,255); background: rgb(54,54,54)") if self.dark_theme_on else btn.set_style_checked(style=f"image: url({url_image}); border: 2px solid rgb(1,196,255); background: rgb(220,220,220)") 
         btn.set_style_unchecked(style=f"image: url({url_image})")
         return btn
+
+    def make_channel_btn(self, parent, channel_number, size, function):
+        button = parent.place_object(g.Button(" ", True, tip=f"Channel {channel_number}")).set_width(size*self.ratio).set_height(size*self.ratio)
+        # QSS_Light = "QPushButton: {" + f"image: url(Images/Off{channel_number}.png);" + "}" + "QPushButton::pressed{" + f"image: url(Images/On{channel_number}.png); border: 2px solid rgb(1,196,255); background: {'(54,54,54)' if self.dark_theme_on else '(220,220,220)'}" + "}"  
+
+        QSS = """
+            QPushButton {
+        """ + f"image: url(Images/Off{channel_number}.png);" + """
+            }
+
+            QPushButton::checked{
+        """ + f"image: url(Images/On{channel_number}.png);" + """
+            border: 2px solid rgb(1,196,255);
+        """ + f"background: {'rgb(54,54,54)' if self.dark_theme_on else 'rgb(220,220,220)'};" + """
+            }
+
+            QPushButton::disabled{
+        """ + f"image: url(Images/Disabled{channel_number}.png);" + """
+        """ + f"background: {'rgb(54,54,54)' if self.dark_theme_on else 'rgb(220,220,220)'};" + """
+            }
+        """
+
+        button.signal_toggled.connect(function)        
+        button._widget.setStyleSheet(QSS)
+        return button
+
 
     def create_colors(self):
         if self.dark_theme_on:
@@ -842,20 +892,31 @@ class GUIv2(root_reader):
                 continue
             button.set_checked(False)
 
+    def find_checked_button(self, buttons_list, previous_btn):
+        for button in buttons_list:
+            if button.is_checked() and button is not previous_btn:
+                return button
+
     def channel_toggling(self, *a):
-        buttons_list = [self.ch0_btn, self.ch1_btn, self.ch2_btn, self.ch3_btn]
-        if self.ch0_btn.is_checked() and self.previous_btn != self.ch0_btn:
-            self.toggle_others_out(self.ch0_btn, buttons_list)
-            self.previous_btn = self.ch0_btn
-        if self.ch1_btn.is_checked() and self.previous_btn != self.ch1_btn:
-            self.toggle_others_out(self.ch1_btn, buttons_list)
-            self.previous_btn = self.ch1_btn
-        if self.ch2_btn.is_checked() and self.previous_btn != self.ch2_btn:
-            self.toggle_others_out(self.ch2_btn, buttons_list)
-            self.previous_btn = self.ch2_btn
-        if self.ch3_btn.is_checked() and self.previous_btn != self.ch3_btn:
-            self.toggle_others_out(self.ch3_btn, buttons_list)
-            self.previous_btn = self.ch3_btn
+        # #General channel buttons:
+        checked_btn = self.find_checked_button(self.buttons_list, self.previous_btn)
+        if checked_btn is not self.previous_btn:
+            self.toggle_others_out(checked_btn, self.buttons_list)
+            self.previous_btn = checked_btn
+
+    def start_channel_toggling(self, *a):
+        #TOF start channel buttons:
+        checked_start_btn = self.find_checked_button(self.start_buttons_list, self.previous_start_btn)
+        if checked_start_btn is not self.previous_start_btn:
+            self.toggle_others_out(checked_start_btn, self.start_buttons_list)
+            self.previous_start_btn = checked_start_btn
+
+    def stop_channel_toggling(self, *a):
+        #TOF stop channel buttons:
+        checked_stop_btn = self.find_checked_button(self.stop_buttons_list, self.previous_stop_btn)
+        if checked_stop_btn is not self.previous_stop_btn:
+            self.toggle_others_out(checked_stop_btn, self.stop_buttons_list)
+            self.previous_stop_btn = checked_stop_btn
 
     def load_graph_options(self):
         self.change_title()
@@ -1072,6 +1133,25 @@ class GUIv2(root_reader):
             self.graph_info[line.name()] = {"style":type_,"fill":fill_level,"type":button}
             self.data[line.name()] = root_data
 
+    def disable_buttons(self, buttons_list, buttons_states):
+        for index, button in enumerate(buttons_list):
+            button.enable(value=buttons_states[index])
+
+    def plot_TOF(self, *a):
+        states = [True if os.stat(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file)).st_size > 7*1024 else False for file in list(self.buttons_files.values())]
+        two_files_pass = True if states.count(True) >= 2 else False
+        self.disable_buttons(self.start_buttons_list,states)
+        self.disable_buttons(self.stop_buttons_list,states)
+
+    def clean_TOF(self, *a):
+        for button in self.start_buttons_list:
+            button.enable()
+        for button in self.stop_buttons_list:
+            button.enable()
+
+        # if self.root_dict["ROOT Types/Type chosen"] == "FILTERED":
+        
+
     def plot_graphs(self, *a):
         btn_checked = self.what_btn_is_checked()
         if self.energy_btn.is_checked():
@@ -1104,6 +1184,11 @@ class GUIv2(root_reader):
             self.plot_data(data, "HIST","TIME")
             self.time_btn.set_checked(False)
             return
+
+        if self.tof_btn.is_checked():
+            self.plot_TOF()
+            self.tof_btn.set_checked(False)
+            self.clean_TOF()
         
         if self.mcs_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"MCS Graph - CH{btn_checked}"
