@@ -267,11 +267,20 @@ class GUIv2(root_reader):
                 background-color: rgb(23, 35, 38);
                 selection-background-color: rgb(32, 81, 96);
             }
+            QTreeView::disabled{
+                background-color: rgb(29,29,29);
+                selection-background-color: rgb(72,72,72);
+            }
         """
         self.light_tree = """
             QTreeView {
                 background-color: rgb(208, 244, 254);
                 selection-background-color: rgb(165, 230, 248);
+                alternate-background-color: white;
+            }
+            QTreeView::disabled{
+                background-color: rgb(185,185,185);
+                selection-background-color: rgb(175,175,175);
                 alternate-background-color: white;
             }
         """
@@ -1137,17 +1146,20 @@ class GUIv2(root_reader):
         for index, button in enumerate(buttons_list):
             button.enable(value=buttons_states[index])
 
-    def plot_TOF(self, *a):
+    def start_TOF(self, *a):
         states = [True if os.stat(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file)).st_size > 7*1024 else False for file in list(self.buttons_files.values())]
         two_files_pass = True if states.count(True) >= 2 else False
         self.disable_buttons(self.start_buttons_list,states)
         self.disable_buttons(self.stop_buttons_list,states)
+        self.root_dict.disable()
 
     def clean_TOF(self, *a):
         for button in self.start_buttons_list:
             button.enable()
         for button in self.stop_buttons_list:
             button.enable()
+
+        self.root_dict.enable()
 
         # if self.root_dict["ROOT Types/Type chosen"] == "FILTERED":
         
@@ -1186,7 +1198,7 @@ class GUIv2(root_reader):
             return
 
         if self.tof_btn.is_checked():
-            self.plot_TOF()
+            self.start_TOF()
             self.tof_btn.set_checked(False)
             self.clean_TOF()
         
