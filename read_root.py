@@ -190,9 +190,9 @@ class _root_reader():
         ch1_data = self.__getdata__(file2, tree)
 
         #Calculation of the ΔT
-        delta_time = []
-        for index in range(0, len(ch0_data)):
-            delta_time.append((ch1_data['Timestamp'][index] - ch0_data['Timestamp'][index])/10**3) #Timestamp are in ps so we transform the result to ns.
+        delta_time = (_np.array(ch1_data["Timestamp"]) - _np.array(ch0_data["Timestamp"]))*1e-3
+        # for index in range(0, len(ch0_data)):
+        #     delta_time.append((ch1_data['Timestamp'][index] - ch0_data['Timestamp'][index])/10**3) #Timestamp are in ps so we transform the result to ns.
 
         #Modification of the upper value for the histogram bins.
         bin_range = max_bin - min_bin
@@ -206,7 +206,7 @@ class _root_reader():
         hist = _np.histogram(delta_time, default_bins, range=(min_bin, max_bin))
         x = hist[1]#[1:]
         y = hist[0]
-        print(x.shape, y.shape)
+        # print(x.shape, y.shape)
         return (x, y, delta_time)
 
     def __CPPTOF__(self, file1, file2, low_cut_0, high_cut_0, low_cut_1, high_cut_1, window, min_bin, max_bin, default_bins=8192, default_bin_size=0.045, tree="Data_R"):

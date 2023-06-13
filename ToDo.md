@@ -10,4 +10,9 @@ PLOTS TO DO
 * [X] TIME
 * [ ] TOF - cpp
 * [ ] PSD vs ENERGY
+* [ ] ENERGY VS ENERGY
+* [ ] TOF VS ENERGY
 * [X] MCS
+
+## C++ TOF
+Note that for the C++ TOF, we might want to save some of the data in order to reuse it for the Energy vs Energy and TOF vs Energy plot. What can and could be done, is to save said data within the `FILTERED` folder or we can make a new folder called `C++ TOF` and save the data in there. Then before we recalculate anything we verify that the folder exists.

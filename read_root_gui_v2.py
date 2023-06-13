@@ -548,23 +548,29 @@ class GUIv2(root_reader):
         inner_right = grid_left.place_object(g.GridLayout(False), alignment=0)
         
         #Add the buttons for the different plots:
-        self.energy_btn = self.make_comp_btn(self.inner_left, "Plot the energy histogram", "Images/EnergyHist.png", column=1, row=1)
+        self.energy_btn = self.make_comp_btn(self.inner_left, "New Energy Histogram", "Images/EnergyHist.png", column=1, row=1)
         self.energy_btn.signal_toggled.connect(self.plot_graphs)
 
-        self.psd_btn = self.make_comp_btn(self.inner_left, "Plot the PSD histogram", "Images/PSDHist.png", column=1, row=2)
+        self.psd_btn = self.make_comp_btn(self.inner_left, "New PSD Histogram", "Images/PSDHist.png", column=1, row=2)
         self.psd_btn.signal_toggled.connect(self.plot_graphs)
         
-        self.time_btn = self.make_comp_btn(self.inner_left, "Plot the time histogram", "Images/TimeHist.png", column=1, row=3)
+        self.time_btn = self.make_comp_btn(self.inner_left, "New Time Histogram", "Images/TimeHist.png", column=1, row=3)
         self.time_btn.signal_toggled.connect(self.plot_graphs)
 
-        self.tof_btn = self.make_comp_btn(self.inner_left, "Plot the TOF (time of flight) histogram", "Images/TOFHist.png", column=1, row=4)
+        self.tof_btn = self.make_comp_btn(self.inner_left, "New TOF (Time of flight) Histogram", "Images/TOFHist.png", column=1, row=4)
         self.tof_btn.signal_toggled.connect(self.plot_graphs)
 
-        self.psdvse_btn = self.make_comp_btn(self.inner_left, "Show the PSD vs Energy Histogram", "Images/PSDvsEnergyHist.png", column=1, row=5)
+        self.psdvse_btn = self.make_comp_btn(self.inner_left, "New PSD vs Energy Histogram", "Images/PSDvsEnergyHist.png", column=1, row=5)
 
-        self.mcs_btn = self.make_comp_btn(self.inner_left, "Plot the MCS graph", "Images/MCS Graph.png", column=1, row=6)
+        self.evse_btn = self.make_comp_btn(self.inner_left, "New Energy vs Energy Histogram", "Images/EnergyvsEnergyHist.png", column=1, row=6)
+
+        self.tofvse_btn = self.make_comp_btn(self.inner_left," New TOF (Time of flight) vs Energy Histogram", "Images/TOFvsEnergyHist.png", column=1, row=7)
+
+        self.mcs_btn = self.make_comp_btn(self.inner_left, "New MCS Graph", "Images/MCS Graph.png", column=1, row=8)
         self.mcs_btn.signal_toggled.connect(self.plot_graphs)
 
+        self.clear_btn = self.make_comp_btn(self.inner_left, "Clear plot", "Images/CompClear.png", column=1, row=9)
+        self.clear_btn.signal_toggled.connect(self.clear)
 
         #Adding the databox and the plot
         self.databox = inner_right.place_object(g.DataboxSaveLoad(file_type='.txt'), alignment=0)
@@ -1012,9 +1018,7 @@ class GUIv2(root_reader):
         match graph_type:
             case "PSD":
                 return (0,1)
-            case "TIME":
-                return (self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"])
-            case "TOF":
+            case "TIME" | "TOF":
                 return (self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"])
             case _:
                 return
@@ -1088,9 +1092,18 @@ class GUIv2(root_reader):
         plotted_items_names = [item.name() for item in self.plot.listDataItems()]
         self.line_selector.clear()
         [self.line_selector.add_item(item) for item in plotted_items_names]
+
+    def clear(self, *a):
+        self.plot.clear()
+        self.lines.clear()
+        self.pens.clear()
+        self.brushes.clear()
+        self.graph_info.clear()
+        self.line_selector.clear()
+        self.clear_btn.set_checked(False)
         
-    def what_btn_is_checked(self, *a):
-        states = [self.ch0_btn.is_checked(),self.ch1_btn.is_checked(),self.ch2_btn.is_checked(),self.ch3_btn.is_checked()]
+    def what_btn_is_checked(self, button_list, *a):
+        states = [button.is_checked() for button in button_list]
         for index, state in enumerate(states):
             if state:
                 return index
@@ -1151,7 +1164,17 @@ class GUIv2(root_reader):
         two_files_pass = True if states.count(True) >= 2 else False
         self.disable_buttons(self.start_buttons_list,states)
         self.disable_buttons(self.stop_buttons_list,states)
-        self.root_dict.disable()
+        start_btn = self.what_btn_is_checked(self.start_buttons_list)
+        stop_btn = self.what_btn_is_checked(self.stop_buttons_list)
+        
+        if self.root_dict["ROOT Types/Type chosen"] == "FILTERED" and two_files_pass:
+            self.root_dict.disable()
+            start_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(start_btn)))
+            stop_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(stop_btn)))
+
+            data = self.__tofhist__(start_file, stop_file, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"], tree=self.tree)
+            
+            self.plot_data(data, "HIST","TOF")
 
     def clean_TOF(self, *a):
         for button in self.start_buttons_list:
@@ -1161,11 +1184,10 @@ class GUIv2(root_reader):
 
         self.root_dict.enable()
 
-        # if self.root_dict["ROOT Types/Type chosen"] == "FILTERED":
         
 
     def plot_graphs(self, *a):
-        btn_checked = self.what_btn_is_checked()
+        btn_checked = self.what_btn_is_checked(self.buttons_list)
         if self.energy_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Energy Histogram - CH{btn_checked}"
             
@@ -1198,9 +1220,11 @@ class GUIv2(root_reader):
             return
 
         if self.tof_btn.is_checked():
+            self.plot_settings_dict["Line/Name"] = f"TOF Histogram"
             self.start_TOF()
-            self.tof_btn.set_checked(False)
             self.clean_TOF()
+            self.tof_btn.set_checked(False)
+            return
         
         if self.mcs_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"MCS Graph - CH{btn_checked}"
