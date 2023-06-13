@@ -285,6 +285,123 @@ class _root_reader():
         data.insert(5, 'Timestamp [s]', timestamps_in_seconds)
         data.to_csv(filepath.split('.')[0]+'.csv', index=False)
 
+class root_reader_v2():
+    def __init__(self, file_path, tree):
+        self.file_path = file_path
+        self.tree = tree
+
+    @staticmethod
+    def PSD(energy_long, energy_short):
+        try:
+            value = (energy_long-energy_short)/energy_long
+        except:
+            value = 0
+
+        return value
+
+    def calculated_PSD(self, data):
+        psd_func = _np.vectorize(self.PSD)
+        psd_values = psd_func(data["Energy"], data["EnergyShort"])
+        data.insert(2, "PSD", psd_values)
+
+    @staticmethod
+    def get_unfiltered(data):
+        indexes = _np.where(data["Flags"] == 16384)[0]
+        temp_dict = {}
+        for key in data.keys():
+            temp_dict[key] = data[key][indexes]
+
+        return _pd.DataFrame(temp_dict)    
+
+    def open(self, raw=False):
+        root = _ur.open(self.file_path)
+        tree = root[self.tree]
+        keys = ["Channel", "Timestamp", "Board", "Energy", "EnergyShort", "Flags"]
+        data = tree.arrays(keys, library="np")
+
+        filtered_dataframe = _pd.DataFrame(data)
+
+        if not raw:
+            timestamps = data["Timestamp"]
+            formatted_timestamps = _pd.to_numeric(timestamps, downcast="integer")
+            filtered_dataframe = filtered_dataframe.drop("Timestamp", axis=1)
+            filtered_dataframe.insert(1, "Timestamp", formatted_timestamps)
+
+        self.calculated_PSD(filtered_dataframe)
+        
+        flags = set(filtered_dataframe["Flags"])
+        for flag in flags:
+            print(list(filtered_dataframe["Flags"]).count(flag), flag)
+        # print(list(filtered_dataframe["Flags"]).count(16512))
+
+        return filtered_dataframe
+
+    def get_energy_hist(self, default_bins=4096):
+        data = self.open()
+        hist = _np.histogram(data["Energy"], bins=default_bins)
+        y, x = hist
+        return (x, y, data["Energy"])
+
+    def get_psd_hist(self, default_bins=4096):
+        data = self.open()
+        hist = _np.histogram(data["PSD"], bins=default_bins, range=(0,1))
+        y, x = hist
+        return (x, y, data["PSD"])
+
+    def get_time_hist(self, min_: int, max_: int, default_bins=4096):
+        data = self.open()
+        time_difference = _np.ediff1d(data["Timestamp"]/1000)
+        hist = _np.histogram(time_difference, bins=default_bins, range=(min_,max_))
+        y, x = hist
+        return (x, y, time_difference)
+
+    def get_tof_hist(self, stop_file: str, min_: int, max_: int, default_bins=8192):
+        data_start = self.open()
+        data_stop = root_reader_v2(stop_file, self.tree).open()
+        # print(len(data_stop))
+        
+        delta_time = (_np.array(data_stop["Timestamp"]) - _np.array(data_start["Timestamp"]))*1e-3
+
+        hist = _np.histogram(delta_time, default_bins, range=(min_, max_))
+        y, x = hist
+        return (x, y, delta_time)
+
+    def get_evse_hist(self, stop_file: str, xbins: int, ybins: int):
+        data_start = self.open()
+        data_stop = root_reader_v2(stop_file, self.tree).open()
+        
+        density, xedge, yedge = _np.histogram2d(data_start["Energy"], data_stop["Energy"], (xbins, ybins))
+        return (xedge, yedge, density)
+
+    def get_tofvse_hist(self, stop_file: str, min_: int, max_: int, default_energy_bins=4096, default_tof_bins=8192):
+        tof_data = self.get_tof_hist(stop_file,min_,max_, default_tof_bins)
+        stop_data = root_reader_v2(stop_file, self.tree).open()
+        min_e = min(stop_data["Energy"])
+        max_e = max(stop_data["Energy"])
+        density, xedge, yedge = _np.histogram2d(stop_data["Energy"], tof_data, [default_energy_bins, default_tof_bins], ((min_e,max_e),(min_,max_)))
+        return (xedge, yedge, density)
+
+    def get_psdvse_hist(self, default_energy_bins=4096, default_psd_bins=4096):
+        data = self.open()
+        min_e = min(data["Energy"])
+        max_e = max(data["Energy"])
+        density, xedge, yedge = _np.histogram2d(data["Energy"], data["PSD"], [default_energy_bins, default_psd_bins], range=((min_e,max_e),(0,1)))
+        return (xedge, yedge, density)
+
+    def get_mcs_graph(self):
+        data = self.open()
+        t0 = 0 #seconds
+        t1 = int(data['Timestamp'][len(data)-1]/10**12) #seconds
+        n_bins = t1-t0
+        hist = _np.histogram(data['Timestamp']/10**12, bins=n_bins, range=(t0,t1))
+        x = hist[1][1:]
+        y = hist[0]
+        return (x, y, data['Timestamp']/10**12)
+
+    
+    
+    
+
 class RootPlotter(_root_reader):
     """
     Used to produce plots containing the data from `.root` file.
@@ -359,8 +476,10 @@ class RootPlotter(_root_reader):
         _plt.ylabel(y_label)
         if self.show:    _plt.show()
 
-# if __name__ == '__main__':
-#     test = _root_reader()
-#     data = test.__psdhist__("C:\\Users\\clegue4\\OneDrive - McGill University\\Coincidence Testing\\Voltage Bias Setup\\DAQ\\Ba133-EQ2611-1000V\\RAW\\DataR_CH0@DT5751_1989_Ba133-EQ2611-1000V.root", 0, 1000, tree='Data_R')
-#     _plt.plot(data[0], data[1], drawstyle='steps-mid')
-#     _plt.show()
+if __name__ == '__main__':
+    # test = root_reader_v2("C:\\Users\\chloe\\OneDrive - McGill University\\Coincidence Testing\\Summer 2023 - CoMPASS\\DAQ\\Co60-1000V-Coinc\\RAW\\DataR_eq2611@DT5751_1989_Co60-1000V-Coinc.root", "Data_R")
+    # test.open()
+    # print(len(test.open()))
+    # test.get_tof_hist("C:\\Users\\chloe\\OneDrive - McGill University\\Coincidence Testing\\Summer 2023 - CoMPASS\\DAQ\\Co60-1000V-Coinc (1.33MeV)\\FILTERED\\DataF_eq2432@DT5751_1989_Co60-1000V-Coinc (1.33MeV).root", -100, 100)
+    test2 = root_reader_v2("C:\\Users\\chloe\\OneDrive - McGill University\\Coincidence Testing\\Summer 2023 - CoMPASS\\DAQ\\Co60-1000V-Coinc - 10us\\RAW\\DataR_eq2611@DT5751_1989_Co60-1000V-Coinc - 10us.root", "Data_R")
+    test2.open()

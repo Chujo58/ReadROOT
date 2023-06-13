@@ -981,15 +981,16 @@ class GUI(_root_reader):
             data = _root_reader.__PSDvsE__(self, self.files_in_use[0], float(self.settings['Plot Settings/Axes limits/x min']), float(self.settings['Plot Settings/Axes limits/x max']), int(self.spectra_tree['Energy N channels']), int(self.spectra_tree['PSD N channels']), tree=self.tree)
             
             tr = QtGui.QTransform()
-            tr.scale(1, 1/self.spectra_tree['PSD N channels'])
+            tr.scale(1, 1/int(self.spectra_tree['PSD N channels']))
 
             self.image = _pg.ImageItem(image=data)
             self.image.setTransform(tr)
             self.PLT.addItem(self.image)
             cm = _pg.colormap.getFromMatplotlib('white_turbo')
-            print(_np.sort(data.flatten())[-20:])
-            self.bar = _pg.ColorBarItem(values=(0,20),cmap=cm)
-            self.bar.setImageItem(self.image,insert_in=self.PLT)
+            # print(_np.sort(data.flatten())[-20:])
+            # self.bar = _pg.ColorBarItem(values=(0,20),cmap=cm)
+            # self.bar.setImageItem(self.image,insert_in=self.PLT)
+            self.image.setColorMap(cm)
             range_ = self.PLT.getViewBox().viewRange()
             self.PLT.getViewBox().setLimits(xMin=range_[0][0],xMax=range_[0][1], yMin=range_[1][0], yMax=range_[1][1])
 

@@ -621,6 +621,7 @@ class GUIv2(root_reader):
 
         self.plot_settings_dict.add_parameter("Histogram/Number of bins", value=100)
         self.plot_settings_dict.connect_signal_changed("Histogram/Number of bins", self.change_bin_number)
+        self.plot_settings_dict.add_parameter("Histogram/2D-Histogram bins", value=1024)
         self.plot_settings_dict.add_parameter("Histogram/Fill Level", value=0)
         self.plot_settings_dict.add_parameter("Histogram/Minimum bin", value=0, tip="For TOF and Time histograms")
         self.plot_settings_dict.add_parameter("Histogram/Maximum bin", value=100, tip="For TOF and time histograms")
@@ -1155,6 +1156,18 @@ class GUIv2(root_reader):
             self.graph_info[line.name()] = {"style":type_,"fill":fill_level,"type":button}
             self.data[line.name()] = root_data
 
+    def plot_2dhist(self, data, button: str):
+        pen_data = None
+        brush_data = None
+        fill_level = None
+        type_ = "2D-HIST"
+
+        if button == "PSDvsE":
+            transform = QtGui.QTransform()
+            transform.scale(1, 1)
+
+        image = pg.ImageItem(image=data)
+
     def disable_buttons(self, buttons_list, buttons_states):
         for index, button in enumerate(buttons_list):
             button.enable(value=buttons_states[index])
@@ -1224,6 +1237,13 @@ class GUIv2(root_reader):
             self.start_TOF()
             self.clean_TOF()
             self.tof_btn.set_checked(False)
+            return
+
+        if self.psdvse_btn.is_checked():
+            self.plot_settings_dict["Line/Name"] = f"PSD vs Energy Histogram - CH{btn_checked}"
+
+            file_to_use = self.buttons_files.get(str(btn_checked))
+            # data = self.__PSDvsE__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict)
             return
         
         if self.mcs_btn.is_checked():
