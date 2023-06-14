@@ -24,3 +24,31 @@ class IconLabel(QtWidgets.QWidget):
     @staticmethod
     def new_icon_size(size: int):
         return QtCore.QSize(size, size)
+
+class Seperator(QtWidgets.QWidget):
+    def __init__(self, size: int, space_size: int, left: int=None, right: int=None):
+        super(QtWidgets.QWidget, self).__init__()
+
+        left = space_size if left is None else left
+        right = space_size if right is None else right
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0,0,0,0)
+        self.setLayout(layout)
+
+        left_grid = QtWidgets.QWidget()
+        left_grid.setFixedWidth(left)
+
+        line = QtWidgets.QFrame()
+        line.setMinimumWidth(size)
+        line.setFixedHeight(1)
+        line.setFrameShape(QtWidgets.QFrame.HLine)
+        line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        line.setStyleSheet("border: 5px solid black")
+
+        right_grid = QtWidgets.QWidget()
+        right_grid.setFixedWidth(right)
+
+        layout.addWidget(left_grid)
+        layout.addWidget(line)
+        layout.addWidget(right_grid)

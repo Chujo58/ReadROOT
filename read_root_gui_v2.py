@@ -24,8 +24,8 @@ InfoParser = XML_Parser.InfoParser
 XMLParser = XML_Parser.XMLParser
 from . import icon_label
 IconLabel = icon_label.IconLabel
-new_size = IconLabel.new_icon_size(35)
-IconLabel.IconSize = new_size
+Seperator = icon_label.Seperator
+IconLabel.IconSize = IconLabel.new_icon_size(35)
 import spinmob as s
 import spinmob.egg as egg
 import numpy as np
@@ -61,22 +61,6 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-#Making a custom colormap using matplotlib
-white_turbo_list = [
-    (0, '#ffffff'),
-    (1e-20, '#30123b'),
-    (0.1, '#4458cb'),
-    (0.2, '#3e9bfe'),
-    (0.4, '#46f783'),
-    (0.5, '#a4fc3b'),
-    (0.6, '#e1dc37'),
-    (0.7, '#fda330'),
-    (0.8, '#ef5a11'),
-    (0.9, '#c32402'),
-    (1, '#311542')
-]
-white_turbo = LinearSegmentedColormap.from_list('white_turbo', white_turbo_list, N=256)
-# cm.register_cmap('white_turbo', white_turbo)
 
 parameters_xml_aliases = {"INPUT":{"Enable":"SRV_PARAM_CH_ENABLED",
                                         "Record length":"SRV_PARAM_RECLEN",
@@ -230,6 +214,7 @@ class GUIv2():
     def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True):
         self.ratio = int(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
         self.dark_theme_on = not dd.isDark()
+        self.colormap = pg.colormap.getFromMatplotlib("black_turbo") if self.dark_theme_on else pg.colormap.getFromMatplotlib("white_turbo")
         self.margins = int(10/3*self.ratio)
         width, height = self.get_screen_resolution()
         width = int(window_size[0]/1680*width)
@@ -670,9 +655,7 @@ class GUIv2():
         self.roi_btn = self.make_channel_btn(button_grid, "SelectROI", 30, self.show_roi, tip="Show region selected by sliders")
         collapse_grid_layout.new_autorow()
 
-        # collapse_grid_layout.place_object(QtGui.QIcon("Images/start.png"))
         label_start = collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: "))
-        # label_start._widget.setPicture
         collapse_grid_layout.new_autorow()
 
         self.start_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
@@ -701,7 +684,6 @@ class GUIv2():
         collapse_grid_layout.new_autorow()
 
         window_label = collapse_grid_layout.place_object(g.Label("Window time: ")).set_width(75*self.ratio)
-        # collapse_grid_layout.new_autorow()
 
         self.time_range = collapse_grid_layout.place_object(superqt.QQuantity("10us"))
         self.time_range.setDecimals(2)
@@ -710,7 +692,6 @@ class GUIv2():
         collapse_grid_layout.new_autorow()
 
         start_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0,column_span=2)
-        # start_button_grid.place_object(g.Label("Start channel: ")).set_width(75*self.ratio)
         start_button_grid.place_object(IconLabel("Images/start.png","Start channel: "))
 
         self.ch0_start_btn = self.make_channel_btn(start_button_grid, "0", 30, self.start_channel_toggling)
@@ -719,13 +700,7 @@ class GUIv2():
         self.ch3_start_btn = self.make_channel_btn(start_button_grid, "3", 30, self.start_channel_toggling)
 
         collapse_grid_layout.new_autorow()
-        line = QtWidgets.QFrame()
-        line.setMinimumWidth(275*self.ratio)
-        line.setFixedHeight(1)
-        line.setFrameShape(QtWidgets.QFrame.HLine)
-        line.setFrameShadow(QtWidgets.QFrame.Sunken)
-        line.setStyleSheet("border:5px solid black")
-        collapse_grid_layout.place_object(line)
+        collapse_grid_layout.place_object(Seperator(125*self.ratio, 100*self.ratio, left=113*self.ratio, right=37*self.ratio),column_span=2)
         collapse_grid_layout.new_autorow()
 
         stop_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)

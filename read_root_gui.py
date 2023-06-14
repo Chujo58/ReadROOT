@@ -99,24 +99,6 @@ def chi_sqr(expected, obtained):
             sum += (obtained[i]-expected[i])**2/expected[i]
     return sum
 
-white_turbo_list = [
-    (0, '#ffffff'),
-    (1e-20, '#30123b'),
-    (0.1, '#4458cb'),
-    (0.2, '#3e9bfe'),
-    (0.4, '#46f783'),
-    (0.5, '#a4fc3b'),
-    (0.6, '#e1dc37'),
-    (0.7, '#fda330'),
-    (0.8, '#ef5a11'),
-    (0.9, '#c32402'),
-    (1, '#311542')
-]
-
-white_turbo = LinearSegmentedColormap.from_list('white_turbo', white_turbo_list, N=256)
-
-cm.register_cmap('white_turbo', white_turbo)
-
 
 class GUI(_root_reader):
     def __init__(self, name='GUI', window_size=[1000,500], show=True, block=True):
