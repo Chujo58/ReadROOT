@@ -17,10 +17,15 @@ import sys as sys
 #----------------------------------------------------------------------------
 # Other imports 
 from . import read_root
-root_reader = read_root._root_reader
+root_reader_v1 = read_root._root_reader
+root_reader = read_root.root_reader_v2
 from . import XML_Parser
 InfoParser = XML_Parser.InfoParser
 XMLParser = XML_Parser.XMLParser
+from . import icon_label
+IconLabel = icon_label.IconLabel
+new_size = IconLabel.new_icon_size(35)
+IconLabel.IconSize = new_size
 import spinmob as s
 import spinmob.egg as egg
 import numpy as np
@@ -221,7 +226,7 @@ def removeItem(combo_box: g.ComboBox, name: str):
     index_to_remove = combo_box.get_index(name)
     combo_box.remove_item(index_to_remove)
 
-class GUIv2(root_reader):
+class GUIv2():
     def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True):
         self.ratio = int(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
         self.dark_theme_on = not dd.isDark()
@@ -233,7 +238,10 @@ class GUIv2(root_reader):
         primary, secondary, accent = self.create_colors()
 
         window = g.Window(name, size=[width, height], autosettings_path=name+"_window.txt")
-        window._window.setWindowIcon(QtGui.QIcon("Images/CoMPASS/icon64x64.ico"))
+        window._window.setWindowIcon(QtGui.QIcon("Images/CoMPASS/icon64x64.png"))
+
+        myappid = 'mycompany.myproduct.subproduct.version' # arbitrary string
+        ct.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
         self.TopGrid = window.place_object(g.GridLayout(True)).set_height(52*self.ratio)#.set_width(1273*self.ratio)
         window.new_autorow()
@@ -635,8 +643,7 @@ class GUIv2(root_reader):
 
         self.previous_start_btn = None
         self.previous_stop_btn = None
- 
-
+        
         light_theme = """
             QPushButton{
                 border: 2px solid rgb(193,193,193);
@@ -656,11 +663,16 @@ class GUIv2(root_reader):
             }
         """
 
-        self.cpp_tof_btn = collapse_grid_layout.place_object(g.Button("Use C++ TOF functions", checkable=True)).set_width(275*self.ratio)
+        button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
+
+        self.cpp_tof_btn = button_grid.place_object(g.Button("Use C++ TOF functions", checkable=True)).set_width(240*self.ratio)
         self.cpp_tof_btn._widget.setStyleSheet(light_theme)
+        self.roi_btn = self.make_channel_btn(button_grid, "SelectROI", 30, self.show_roi, tip="Show region selected by sliders")
         collapse_grid_layout.new_autorow()
 
-        label_start = collapse_grid_layout.place_object(g.Label("Start channel range: "))
+        # collapse_grid_layout.place_object(QtGui.QIcon("Images/start.png"))
+        label_start = collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: "))
+        # label_start._widget.setPicture
         collapse_grid_layout.new_autorow()
 
         self.start_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
@@ -670,10 +682,11 @@ class GUIv2(root_reader):
         self.start_range_hslider.setValue((0,80))
         self.start_range_hslider.setRange(0,self.old_stop_range)
         self.start_range_hslider.show()
+        self.start_range_hslider.valueChanged.connect(self.update_roi)
 
         collapse_grid_layout.new_autorow()
 
-        label_stop = collapse_grid_layout.place_object(g.Label("Stop channel range: "))
+        label_stop = collapse_grid_layout.place_object(IconLabel("Images/stop.png","Stop channel range: "))
         collapse_grid_layout.new_autorow()
 
         self.stop_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
@@ -683,6 +696,7 @@ class GUIv2(root_reader):
         self.stop_range_hslider.setValue((0,80))
         self.stop_range_hslider.setRange(0,self.old_stop_range)
         self.stop_range_hslider.show()
+        self.stop_range_hslider.valueChanged.connect(self.update_roi)
 
         collapse_grid_layout.new_autorow()
 
@@ -696,7 +710,8 @@ class GUIv2(root_reader):
         collapse_grid_layout.new_autorow()
 
         start_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0,column_span=2)
-        start_button_grid.place_object(g.Label("Start channel: ")).set_width(75*self.ratio)
+        # start_button_grid.place_object(g.Label("Start channel: ")).set_width(75*self.ratio)
+        start_button_grid.place_object(IconLabel("Images/start.png","Start channel: "))
 
         self.ch0_start_btn = self.make_channel_btn(start_button_grid, "0", 30, self.start_channel_toggling)
         self.ch1_start_btn = self.make_channel_btn(start_button_grid, "1", 30, self.start_channel_toggling)
@@ -714,7 +729,7 @@ class GUIv2(root_reader):
         collapse_grid_layout.new_autorow()
 
         stop_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
-        stop_button_grid.place_object(g.Label("Stop channel: ")).set_width(75*self.ratio)
+        stop_button_grid.place_object(IconLabel("Images/stop.png","Stop channel: "))
 
         self.ch0_stop_btn = self.make_channel_btn(stop_button_grid, "0", 30, self.stop_channel_toggling)
         self.ch1_stop_btn = self.make_channel_btn(stop_button_grid, "1", 30, self.stop_channel_toggling)
@@ -725,6 +740,10 @@ class GUIv2(root_reader):
         self.buttons_list = [self.ch0_btn, self.ch1_btn, self.ch2_btn, self.ch3_btn]
         self.start_buttons_list = [self.ch0_start_btn, self.ch1_start_btn, self.ch2_start_btn, self.ch3_start_btn]
         self.stop_buttons_list = [self.ch0_stop_btn, self.ch1_stop_btn, self.ch2_stop_btn, self.ch3_stop_btn]
+ 
+        self.start_roi = pg.LinearRegionItem(self.start_range_hslider.value(),brush=pg.mkBrush((5,255,0,50)),pen=pg.mkPen((31,88,37)),movable=False)
+        self.stop_roi = pg.LinearRegionItem(self.stop_range_hslider.value(),brush=pg.mkBrush((255,0,0,50)),pen=pg.mkPen((88,31,31)),movable=False)
+
 
         parent.addWidget(collapse_grid_layout._widget)
 
@@ -734,23 +753,28 @@ class GUIv2(root_reader):
         btn.set_style_unchecked(style=f"image: url({url_image})")
         return btn
 
-    def make_channel_btn(self, parent, channel_number, size, function):
-        button = parent.place_object(g.Button(" ", True, tip=f"Channel {channel_number}")).set_width(size*self.ratio).set_height(size*self.ratio)
+    def make_channel_btn(self, parent, channel_number, size, function, tip: str=None, off: str=None, on:str=None, disabled:str=None):
+        tip = f"Channel {channel_number}" if tip is None else tip
+        button = parent.place_object(g.Button(" ", True, tip=tip)).set_width(size*self.ratio).set_height(size*self.ratio)
         # QSS_Light = "QPushButton: {" + f"image: url(Images/Off{channel_number}.png);" + "}" + "QPushButton::pressed{" + f"image: url(Images/On{channel_number}.png); border: 2px solid rgb(1,196,255); background: {'(54,54,54)' if self.dark_theme_on else '(220,220,220)'}" + "}"  
+
+        off = "Off" if off is None else off
+        on = "On" if on is None else on
+        disabled = "Disabled" if disabled is None else disabled
 
         QSS = """
             QPushButton {
-        """ + f"image: url(Images/Off{channel_number}.png);" + """
+        """ + f"image: url(Images/{off}{channel_number}.png);" + """
             }
 
             QPushButton::checked{
-        """ + f"image: url(Images/On{channel_number}.png);" + """
+        """ + f"image: url(Images/{on}{channel_number}.png);" + """
             border: 2px solid rgb(1,196,255);
         """ + f"background: {'rgb(54,54,54)' if self.dark_theme_on else 'rgb(220,220,220)'};" + """
             }
 
             QPushButton::disabled{
-        """ + f"image: url(Images/Disabled{channel_number}.png);" + """
+        """ + f"image: url(Images/{disabled}{channel_number}.png);" + """
         """ + f"background: {'rgb(54,54,54)' if self.dark_theme_on else 'rgb(220,220,220)'};" + """
             }
         """
@@ -984,6 +1008,17 @@ class GUIv2(root_reader):
         self.stop_range_hslider.setValue(new_stop_values)
         self.old_stop_range = new_stop_range
 
+        self.start_roi.setRegion(self.start_range_hslider.value())
+        self.stop_roi.setRegion(self.stop_range_hslider.value())
+
+    def show_roi(self, *a):
+        self.plot.addItem(self.start_roi) if self.roi_btn.is_checked() else self.plot.removeItem(self.start_roi)
+        self.plot.addItem(self.stop_roi) if self.roi_btn.is_checked() else self.plot.removeItem(self.stop_roi)
+
+    def update_roi(self, *a):
+        self.start_roi.setRegion(self.start_range_hslider.value())
+        self.stop_roi.setRegion(self.stop_range_hslider.value())
+
     def change_line_highlight(self, *a):
         line_selected = self.line_selector.get_text()
         
@@ -1185,7 +1220,7 @@ class GUIv2(root_reader):
             start_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(start_btn)))
             stop_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(stop_btn)))
 
-            data = self.__tofhist__(start_file, stop_file, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"], tree=self.tree)
+            data = root_reader(start_file, self.tree).get_tof_hist(stop_file, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"])
             
             self.plot_data(data, "HIST","TOF")
 
@@ -1201,11 +1236,13 @@ class GUIv2(root_reader):
 
     def plot_graphs(self, *a):
         btn_checked = self.what_btn_is_checked(self.buttons_list)
+        file_to_use = self.buttons_files.get(str(btn_checked))
+        path_to_use = os.path.join(self.complete_path, self.root_dict["ROOT Types/Type chosen"], file_to_use)
+
         if self.energy_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Energy Histogram - CH{btn_checked}"
             
-            file_to_use = self.buttons_files.get(str(btn_checked))
-            data = self.__energyhist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Number of bins"], self.tree)
+            data = root_reader(path_to_use, self.tree).get_energy_hist(bins=self.plot_settings_dict["Histogram/Number of bins"])
 
             self.plot_data(data, "HIST","ENERGY")
             self.energy_btn.set_checked(False)     
@@ -1215,9 +1252,8 @@ class GUIv2(root_reader):
         if self.psd_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD Histogram - CH{btn_checked}"
 
-            file_to_use = self.buttons_files.get(str(btn_checked))
-            data = self.__psdhist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Number of bins"], self.tree)
-
+            data = root_reader(path_to_use, self.tree).get_psd_hist(bins=self.plot_settings_dict["Histogram/Number of bins"])
+            
             self.plot_data(data, "HIST","PSD")
             self.psd_btn.set_checked(False)
             return
@@ -1225,8 +1261,7 @@ class GUIv2(root_reader):
         if self.time_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Time Histogram - CH{btn_checked}"
 
-            file_to_use = self.buttons_files.get(str(btn_checked))
-            data = self.__timehist__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"], self.tree)
+            data = root_reader(path_to_use, self.tree).get_time_hist(self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], bins=self.plot_settings_dict["Histogram/Number of bins"])
 
             self.plot_data(data, "HIST","TIME")
             self.time_btn.set_checked(False)
@@ -1249,8 +1284,7 @@ class GUIv2(root_reader):
         if self.mcs_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"MCS Graph - CH{btn_checked}"
 
-            file_to_use = self.buttons_files.get(str(btn_checked))
-            data = self.__MCSgraph__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.tree)
+            data = root_reader(path_to_use, self.tree).get_mcs_graph()
 
             self.plot_data(data, "GRAPH","MCS")
             self.mcs_btn.set_checked(False)

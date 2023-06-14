@@ -313,7 +313,7 @@ class root_reader_v2():
 
         return _pd.DataFrame(temp_dict)    
 
-    def open(self, raw=False):
+    def open(self, raw=False, check_flags=False):
         root = _ur.open(self.file_path)
         tree = root[self.tree]
         keys = ["Channel", "Timestamp", "Board", "Energy", "EnergyShort", "Flags"]
@@ -328,27 +328,31 @@ class root_reader_v2():
             filtered_dataframe.insert(1, "Timestamp", formatted_timestamps)
 
         self.calculated_PSD(filtered_dataframe)
-        
-        flags = set(filtered_dataframe["Flags"])
-        for flag in flags:
-            print(list(filtered_dataframe["Flags"]).count(flag), flag)
-        # print(list(filtered_dataframe["Flags"]).count(16512))
+
+        if check_flags:
+            flags = set(filtered_dataframe["Flags"])
+            for flag in flags:
+                print(list(filtered_dataframe["Flags"]).count(flag), flag)
+            #  print(list(filtered_dataframe["Flags"]).count(16512))
 
         return filtered_dataframe
 
-    def get_energy_hist(self, default_bins=4096):
+    def get_energy_hist(self, default_bins=4096, **kwargs):
+        default_bins = default_bins if kwargs.get("bins") is None else kwargs.get("bins")
         data = self.open()
         hist = _np.histogram(data["Energy"], bins=default_bins)
         y, x = hist
         return (x, y, data["Energy"])
 
-    def get_psd_hist(self, default_bins=4096):
+    def get_psd_hist(self, default_bins=4096, **kwargs):
+        default_bins = default_bins if kwargs.get("bins") is None else kwargs.get("bins")
         data = self.open()
         hist = _np.histogram(data["PSD"], bins=default_bins, range=(0,1))
         y, x = hist
         return (x, y, data["PSD"])
 
-    def get_time_hist(self, min_: int, max_: int, default_bins=4096):
+    def get_time_hist(self, min_: int, max_: int, default_bins=4096, **kwargs):
+        default_bins = default_bins if kwargs.get("bins") is None else kwargs.get("bins")
         data = self.open()
         time_difference = _np.ediff1d(data["Timestamp"]/1000)
         hist = _np.histogram(time_difference, bins=default_bins, range=(min_,max_))
