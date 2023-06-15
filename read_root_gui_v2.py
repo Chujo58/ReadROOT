@@ -22,10 +22,11 @@ root_reader = read_root.root_reader_v2
 from . import XML_Parser
 InfoParser = XML_Parser.InfoParser
 XMLParser = XML_Parser.XMLParser
-from . import icon_label
-IconLabel = icon_label.IconLabel
-Seperator = icon_label.Seperator
+from . import QtClasses
+IconLabel = QtClasses.IconLabel
+Seperator = QtClasses.Seperator
 IconLabel.IconSize = IconLabel.new_icon_size(35)
+bcolors = QtClasses.bcolors
 import spinmob as s
 import spinmob.egg as egg
 import numpy as np
@@ -50,16 +51,6 @@ g = egg.gui
 Horizontal = QtCore.Qt.Orientation.Horizontal
 Vertical = QtCore.Qt.Orientation.Vertical
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 
 parameters_xml_aliases = {"INPUT":{"Enable":"SRV_PARAM_CH_ENABLED",

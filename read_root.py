@@ -1,8 +1,8 @@
-import numpy as _np
+import numpy
 import sys
 import matplotlib.pyplot as _plt
 import uproot as _ur
-import pandas as _pd
+import pandas
 import tkinter.filedialog as _fd
 from scipy.optimize import curve_fit
 
@@ -15,9 +15,9 @@ import os as _os
 
 import cppimport
 try:
-    funcs = cppimport.imp("wrap")
+    lib = cppimport.imp("wrap")
 except:
-    funcs = cppimport.imp_from_filepath("wrap.cpp")
+    lib = cppimport.imp_from_filepath("wrap.cpp")
 # from scipy import asarray as ar,exp
 
 
@@ -49,21 +49,21 @@ class _root_reader():
 
     @staticmethod
     def median(data_set):
-        return _np.median(data_set)
+        return numpy.median(data_set)
 
     @staticmethod
     def average(data_set):
         """
         Returns the average of a data set.
         """
-        return _np.average(data_set)
+        return numpy.average(data_set)
 
     @staticmethod
     def standard_deviation(data_set):
         """
         Returns the standard deviation of a data set.
         """
-        return _np.std(data_set)
+        return numpy.std(data_set)
 
     @staticmethod
     def PSD(energylong, energyshort):
@@ -78,22 +78,22 @@ class _root_reader():
 
 
     def calc_psd(self, data):
-        psd_func = _np.vectorize(self.PSD)
+        psd_func = numpy.vectorize(self.PSD)
         PSD_values = psd_func(data['Energy'], data['EnergyShort'])
         data.insert(2, 'PSD', PSD_values)
         
 
     @staticmethod
     def get_unfiltered(data_raw):
-        indexes = _np.where(data_raw['Flags'] == 16384)[0]
+        indexes = numpy.where(data_raw['Flags'] == 16384)[0]
         temp_dict = {}
         for key in data_raw.keys():
             temp_dict[key] = data_raw[key][indexes]
-        return _pd.DataFrame(temp_dict)
+        return pandas.DataFrame(temp_dict)
 
     @staticmethod
     def data_in_range(data_unfiltered, start, stop):
-        return _np.where((start <= data_unfiltered) & (data_unfiltered <= stop))
+        return numpy.where((start <= data_unfiltered) & (data_unfiltered <= stop))
 
     def __getdata__(self, filepath:str, tree='Data_F', raw=False):
         """
@@ -112,10 +112,10 @@ class _root_reader():
         keys = ['Channel', 'Timestamp', 'Board', 'Energy', 'EnergyShort', 'Flags']
         filtered_data = tree.arrays(keys, library='np')
         
-        filtered_DF = _pd.DataFrame(filtered_data)
+        filtered_DF = pandas.DataFrame(filtered_data)
         if not raw:
             timestamps = filtered_DF['Timestamp']
-            formatted_timestamps = _pd.to_numeric(timestamps, downcast='integer')
+            formatted_timestamps = pandas.to_numeric(timestamps, downcast='integer')
             filtered_DF = filtered_DF.drop('Timestamp', axis=1)
             filtered_DF.insert(1, 'Timestamp', formatted_timestamps)
         
@@ -138,23 +138,23 @@ class _root_reader():
         `tuple` containing the bins and the counts for the histogram.
         """
         data = self.__getdata__(filepath, tree)
-        hist = _np.histogram(data['Energy'], bins=default_bins, range=(0,default_bins))
+        hist = numpy.histogram(data['Energy'], bins=default_bins, range=(0,default_bins))
         x = hist[1]#[1:]
         y = hist[0]
         return (x, y, data['Energy'])
 
     def __psdhist__(self, filepath, default_bins=4096, tree='Data_F'):
         data = self.__getdata__(filepath, tree)
-        hist = _np.histogram(data['PSD'], bins=default_bins, range=(0,1))
+        hist = numpy.histogram(data['PSD'], bins=default_bins, range=(0,1))
         x = hist[1]#[1:]
         y = hist[0]
         return (x, y, data['PSD'])
         
     def __timehist__(self, filepath, min_bin, max_bin, default_bins=4096, tree='Data_F'):
         data = self.__getdata__(filepath, tree)
-        time_difference = _np.ediff1d(data['Timestamp']/1000)
+        time_difference = numpy.ediff1d(data['Timestamp']/1000)
 
-        hist = _np.histogram(time_difference, bins=default_bins, range=(min_bin, max_bin))
+        hist = numpy.histogram(time_difference, bins=default_bins, range=(min_bin, max_bin))
         x = hist[1]#[1:]
         y = hist[0]
         return (x, y, time_difference)
@@ -190,7 +190,7 @@ class _root_reader():
         ch1_data = self.__getdata__(file2, tree)
 
         #Calculation of the ΔT
-        delta_time = (_np.array(ch1_data["Timestamp"]) - _np.array(ch0_data["Timestamp"]))*1e-3
+        delta_time = (numpy.array(ch1_data["Timestamp"]) - numpy.array(ch0_data["Timestamp"]))*1e-3
         # for index in range(0, len(ch0_data)):
         #     delta_time.append((ch1_data['Timestamp'][index] - ch0_data['Timestamp'][index])/10**3) #Timestamp are in ps so we transform the result to ns.
 
@@ -203,7 +203,7 @@ class _root_reader():
             bin_range = max_bin - min_bin
 
         
-        hist = _np.histogram(delta_time, default_bins, range=(min_bin, max_bin))
+        hist = numpy.histogram(delta_time, default_bins, range=(min_bin, max_bin))
         x = hist[1]#[1:]
         y = hist[0]
         # print(x.shape, y.shape)
@@ -219,10 +219,10 @@ class _root_reader():
         range_0 = list(self.data_in_range(ch0_unfiltered['Energy'], low_cut_0, high_cut_0)[0])
         range_1 = list(self.data_in_range(ch1_unfiltered['Energy'], low_cut_1, high_cut_1)[0])
 
-        first_line = _np.array(ch0_unfiltered['Timestamp'].iloc[range_0]).astype(_np.int64)
-        second_line = _np.array(ch1_unfiltered['Timestamp'].iloc[range_1]).astype(_np.int64)
+        first_line = numpy.array(ch0_unfiltered['Timestamp'].iloc[range_0]).astype(numpy.int64)
+        second_line = numpy.array(ch1_unfiltered['Timestamp'].iloc[range_1]).astype(numpy.int64)
 
-        start, stop = funcs.TOF(first_line, second_line, window)
+        start, stop = lib.TOF(first_line, second_line, window)
 
         bin_range = max_bin - min_bin
         bin_size = round(bin_range/default_bins, 3)
@@ -232,7 +232,7 @@ class _root_reader():
             bin_range = max_bin - min_bin
 
         diffs = (stop-start)*10**(-3)
-        hist = _np.histogram(diffs, bins=default_bins, range=(min_bin, max_bin))
+        hist = numpy.histogram(diffs, bins=default_bins, range=(min_bin, max_bin))
         x = hist[1]
         y = hist[0]
         return (x, y, diffs)        
@@ -240,7 +240,7 @@ class _root_reader():
 
     def __PSDvsE__(self, filepath, min_e, max_e, default_energy_bins=4096, default_psd_bins=4096, tree='Data_F'):
         data = self.__getdata__(filepath, tree)
-        hist = _np.histogram2d(data['Energy'], data['PSD'], [default_energy_bins, default_psd_bins], range=((min_e,max_e),(0,1)))
+        hist = numpy.histogram2d(data['Energy'], data['PSD'], [default_energy_bins, default_psd_bins], range=((min_e,max_e),(0,1)))
         return hist[0]
         
 
@@ -257,7 +257,7 @@ class _root_reader():
         t0 = 0 #seconds
         t1 = int(data['Timestamp'][len(data)-1]/10**12) #seconds
         n_bins = t1-t0
-        hist = _np.histogram(data['Timestamp']/10**12, bins=n_bins, range=(t0,t1))
+        hist = numpy.histogram(data['Timestamp']/10**12, bins=n_bins, range=(t0,t1))
         x = hist[1][1:]
         y = hist[0]
         return (x, y, data['Timestamp']/10**12)
@@ -286,12 +286,36 @@ class _root_reader():
         data.to_csv(filepath.split('.')[0]+'.csv', index=False)
 
 class root_reader_v2():
-    def __init__(self, file_path, tree):
+    """
+    A file reader capable of getting information from a `.root` file.
+
+    Parameters
+    ----------
+    file_path : str
+        Path of the file we want to read
+    tree : str
+        Key for the TTree inside the root file
+    """
+    def __init__(self, file_path: str, tree: str):
         self.file_path = file_path
         self.tree = tree
 
     @staticmethod
-    def PSD(energy_long, energy_short):
+    def PSD(energy_long: int, energy_short: int) -> float:
+        """Calculates the PSD value for given energies.
+
+        Parameters
+        ----------
+        energy_long : int
+            Long gate energy
+        energy_short : int
+            Short gate energy
+
+        Returns
+        -------
+        psd : float
+            PSD value
+        """
         try:
             value = (energy_long-energy_short)/energy_long
         except:
@@ -299,35 +323,97 @@ class root_reader_v2():
 
         return value
 
-    def calculated_PSD(self, data):
-        psd_func = _np.vectorize(self.PSD)
+    def calculate_PSD(self, data: pandas.DataFrame):
+        """Calculates the PSD values for a dataset.
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            Dataset used to calculate the PSD values
+        """
+        psd_func = numpy.vectorize(self.PSD)
         psd_values = psd_func(data["Energy"], data["EnergyShort"])
         data.insert(2, "PSD", psd_values)
 
     @staticmethod
-    def get_unfiltered(data):
-        indexes = _np.where(data["Flags"] == 16384)[0]
+    def get_unfiltered(data: pandas.DataFrame) -> pandas.DataFrame:
+        """Removes the pileup and saturation events from the selected dataset
+
+        Parameters
+        ----------
+        data : pandas.DataFrame
+            Dataset from which we remove the pileup and saturation events
+
+        Returns
+        -------
+        unfiltered_data : pandas.DataFrame
+            Unfiltered dataset
+        """
+        indexes = numpy.where(data["Flags"] == 16384)[0]
         temp_dict = {}
         for key in data.keys():
             temp_dict[key] = data[key][indexes]
 
-        return _pd.DataFrame(temp_dict)    
+        return pandas.DataFrame(temp_dict)    
 
-    def open(self, raw=False, check_flags=False):
+    def generate_csv_name(self, start: int, stop: int, window: int) -> str:
+        """Generates the csv file path where the C++ TOF will save its data.
+
+        Parameters
+        ----------
+        start : int
+            Start channel number
+        stop : int
+            Stop channel number
+        window : int
+            Time window for the TOF
+
+        Returns
+        -------
+        file_path : str
+            File path for the csv
+        """
+        list_output = self.file_path.split("/")
+        if len(list_output) == 1:
+            list_output = self.file_path.split("\\")
+
+        list_output[0] = f"{list_output[0]}\\"
+        where_to_save = _os.path.join(*list_output[0:-3])
+        run_folder = list_output[-3]
+        tree_folder = list_output[-2]
+        csv_name = f"{run_folder}_{tree_folder}_CH{start}-CH{stop}_{window}.csv"
+        return _os.path.join(where_to_save, run_folder, "C++ Data", csv_name)
+
+
+    def open(self, raw=False, check_flags=False) -> pandas.DataFrame:
+        """Opens the selected file
+
+        Parameters
+        ----------
+        raw : bool, optional
+            Whether we downcast the timestamps to integers or keep them as unsigned integers, by default False
+        check_flags : bool, optional
+            Whether we print out the different flags found in the selected file, by default False
+
+        Returns
+        -------
+        filtered_data : pandas.DataFrame
+            Downcasted timestamp data with all the rest of the file's data.
+        """
         root = _ur.open(self.file_path)
         tree = root[self.tree]
         keys = ["Channel", "Timestamp", "Board", "Energy", "EnergyShort", "Flags"]
         data = tree.arrays(keys, library="np")
 
-        filtered_dataframe = _pd.DataFrame(data)
+        filtered_dataframe = pandas.DataFrame(data)
 
         if not raw:
             timestamps = data["Timestamp"]
-            formatted_timestamps = _pd.to_numeric(timestamps, downcast="integer")
+            formatted_timestamps = pandas.to_numeric(timestamps, downcast="integer")
             filtered_dataframe = filtered_dataframe.drop("Timestamp", axis=1)
             filtered_dataframe.insert(1, "Timestamp", formatted_timestamps)
 
-        self.calculated_PSD(filtered_dataframe)
+        self.calculate_PSD(filtered_dataframe)
 
         if check_flags:
             flags = set(filtered_dataframe["Flags"])
@@ -337,71 +423,208 @@ class root_reader_v2():
 
         return filtered_dataframe
 
-    def get_energy_hist(self, default_bins=4096, **kwargs):
+    def get_energy_hist(self, default_bins=4096, **kwargs) -> tuple[numpy.array, numpy.array, pandas.Series]:
+        """Generates the energy histogram's data
+
+        Parameters
+        ----------
+        default_bins : int, optional
+            Number of bins used by the histogram, by default 4096
+
+        Returns
+        -------
+        output_tuple : tuple[numpy.array, numpy.array, pandas.Series]
+            Tuple containing the x data, y data and raw data used to create the histogram.
+        """
         default_bins = default_bins if kwargs.get("bins") is None else kwargs.get("bins")
         data = self.open()
-        hist = _np.histogram(data["Energy"], bins=default_bins)
+        hist = numpy.histogram(data["Energy"], bins=default_bins)
         y, x = hist
         return (x, y, data["Energy"])
 
-    def get_psd_hist(self, default_bins=4096, **kwargs):
+    def get_psd_hist(self, default_bins=4096, **kwargs) -> tuple[numpy.array, numpy.array, pandas.Series]:
+        """Generates the PSD histogram's data
+
+        Parameters
+        ----------
+        default_bins : int, optional
+            Number of bins used by the histogram, by default 4096
+
+        Returns
+        -------
+        output_tuple : tuple[numpy.array, numpy.array, pandas.Series]
+            Tuple containing the x data, y data and raw data used to create the histogram.
+        """
         default_bins = default_bins if kwargs.get("bins") is None else kwargs.get("bins")
         data = self.open()
-        hist = _np.histogram(data["PSD"], bins=default_bins, range=(0,1))
+        hist = numpy.histogram(data["PSD"], bins=default_bins, range=(0,1))
         y, x = hist
         return (x, y, data["PSD"])
 
-    def get_time_hist(self, min_: int, max_: int, default_bins=4096, **kwargs):
+    def get_time_hist(self, min_: int, max_: int, default_bins=4096, **kwargs) -> tuple[numpy.array, numpy.array, numpy.array]:
+        """Generates the time histogram's data
+
+        Parameters
+        ----------
+        min_ : int
+            Minimum time for the histogram's range
+        max_ : int
+            Maximum time for the histogram's range
+        default_bins : int, optional
+            Number of bins used by the histogram, by default 4096
+
+        Returns
+        -------
+        output_tuple : tuple[numpy.array, numpy.array, numpy.array]
+            Tuple containing the x data, the y data and the raw data used to create the histogram.
+        """
         default_bins = default_bins if kwargs.get("bins") is None else kwargs.get("bins")
         data = self.open()
-        time_difference = _np.ediff1d(data["Timestamp"]/1000)
-        hist = _np.histogram(time_difference, bins=default_bins, range=(min_,max_))
+        time_difference = numpy.ediff1d(data["Timestamp"]/1000)
+        hist = numpy.histogram(time_difference, bins=default_bins, range=(min_,max_))
         y, x = hist
         return (x, y, time_difference)
 
-    def get_tof_hist(self, stop_file: str, min_: int, max_: int, default_bins=8192):
+    def get_tof_hist(self, stop_file: str, min_: int, max_: int, default_bins=8192) -> tuple[numpy.array, numpy.array, numpy.array]:
+        """Generates the TOF histogram's data from a file with the TTree key `Data_F`
+
+        .. note::
+            Requires two files to be used.
+
+        Parameters
+        ----------
+        stop_file : str
+            Path to the stop channel's root file
+        min_ : int
+            Minimum time for the histogram's range
+        max_ : int
+            Maximum time for the histogram's range
+        default_bins : int, optional
+            Number of bins used by the histogram, by default 8192
+
+        Returns
+        -------
+        output_tuple : tuple[numpy.array, numpy.array, numpy.array]
+            Tuple containing the x data, the y data and the raw data used to create the histogram.
+        """
         data_start = self.open()
         data_stop = root_reader_v2(stop_file, self.tree).open()
         # print(len(data_stop))
         
-        delta_time = (_np.array(data_stop["Timestamp"]) - _np.array(data_start["Timestamp"]))*1e-3
+        delta_time = (numpy.array(data_stop["Timestamp"]) - numpy.array(data_start["Timestamp"]))*1e-3
 
-        hist = _np.histogram(delta_time, default_bins, range=(min_, max_))
+        hist = numpy.histogram(delta_time, default_bins, range=(min_, max_))
         y, x = hist
         return (x, y, delta_time)
 
-    def get_evse_hist(self, stop_file: str, xbins: int, ybins: int):
+    def get_evse_hist(self, stop_file: str, xbins: int, ybins: int) -> tuple[numpy.array, numpy.array, numpy.array]:
+        """Generates the Energy vs Energy 2D histogram's data from a file with the TTree key `Data_F`
+
+        .. note::
+            Requires two files to be used.
+
+        Parameters
+        ----------
+        stop_file : str
+            Path to the stop channel's root file
+        xbins : int
+            Number of bins used by the histogram for the x axis
+        ybins : int
+            Number of bins used by the histogram for the y axis
+
+        Returns
+        -------
+        output_tuple: tuple[numpy.array, numpy.array, numpy.array]
+            Tuple containing the x bins, y bins and the density (z axis counts) calculated the the histogram.
+        """
         data_start = self.open()
         data_stop = root_reader_v2(stop_file, self.tree).open()
         
-        density, xedge, yedge = _np.histogram2d(data_start["Energy"], data_stop["Energy"], (xbins, ybins))
+        density, xedge, yedge = numpy.histogram2d(data_start["Energy"], data_stop["Energy"], (xbins, ybins))
         return (xedge, yedge, density)
 
-    def get_tofvse_hist(self, stop_file: str, min_: int, max_: int, default_energy_bins=4096, default_tof_bins=8192):
+    def get_tofvse_hist(self, stop_file: str, min_: int, max_: int, default_energy_bins=4096, default_tof_bins=8192) -> tuple[numpy.array, numpy.array, numpy.array]:
+        """Generates the TOF vs Energy 2D histogram's data from a file with the TTree key `Data_F`
+
+        .. note::
+            Requires two files to be used.
+
+        Parameters
+        ----------
+        stop_file : str
+            Path to the stop channel's root file
+        min_ : int
+            Minimum time for the histogram's range
+        max_ : int
+            Maximum time for the histogram's range
+        default_energy_bins : int, optional
+            Number of bins used by the histogram for the energy axis, by default 4096
+        default_tof_bins : int, optional
+            Number of bins used by the histogram for the TOF axis, by default 8192
+
+        Returns
+        -------
+        output_tuple : tuple[numpy.array, numpy.array, numpy.array]
+            Tuple containing the x bins, y bins and the density (z axis counts) calculated by the histogram.
+        """
         tof_data = self.get_tof_hist(stop_file,min_,max_, default_tof_bins)
         stop_data = root_reader_v2(stop_file, self.tree).open()
         min_e = min(stop_data["Energy"])
         max_e = max(stop_data["Energy"])
-        density, xedge, yedge = _np.histogram2d(stop_data["Energy"], tof_data, [default_energy_bins, default_tof_bins], ((min_e,max_e),(min_,max_)))
+        density, xedge, yedge = numpy.histogram2d(stop_data["Energy"], tof_data, [default_energy_bins, default_tof_bins], ((min_e,max_e),(min_,max_)))
         return (xedge, yedge, density)
 
-    def get_psdvse_hist(self, default_energy_bins=4096, default_psd_bins=4096):
+    def get_psdvse_hist(self, default_energy_bins=4096, default_psd_bins=4096) -> tuple[numpy.array, numpy.array, numpy.array]:
+        """Generates the PSD vs Energy 2D histogram's data
+
+        Parameters
+        ----------
+        default_energy_bins : int, optional
+            Number of bins used by the histogram for the energy axis, by default 4096
+        default_psd_bins : int, optional
+            Number of bins used by the histogram for the PSD axis, by default 4096
+
+        Returns
+        -------
+        output_tuple : tuple[numpy.array, numpy.array, numpy.array]
+            Tuple containing the x bins, y bins and the density (z axis counts) calculated by the histogram.
+        """
         data = self.open()
         min_e = min(data["Energy"])
         max_e = max(data["Energy"])
-        density, xedge, yedge = _np.histogram2d(data["Energy"], data["PSD"], [default_energy_bins, default_psd_bins], range=((min_e,max_e),(0,1)))
+        density, xedge, yedge = numpy.histogram2d(data["Energy"], data["PSD"], [default_energy_bins, default_psd_bins], range=((min_e,max_e),(0,1)))
         return (xedge, yedge, density)
 
-    def get_mcs_graph(self):
+    def get_mcs_graph(self) -> tuple[numpy.array, numpy.array, pandas.Series]:
+        """Generates the MCS graph's data
+
+        Returns
+        -------
+        output_tuple : tuple[numpy.array, numpy.array, pandas.Series]
+            Tuple containing the x data, y data and the raw data used for the graph.
+        """
         data = self.open()
         t0 = 0 #seconds
         t1 = int(data['Timestamp'][len(data)-1]/10**12) #seconds
         n_bins = t1-t0
-        hist = _np.histogram(data['Timestamp']/10**12, bins=n_bins, range=(t0,t1))
+        hist = numpy.histogram(data['Timestamp']/10**12, bins=n_bins, range=(t0,t1))
         x = hist[1][1:]
         y = hist[0]
         return (x, y, data['Timestamp']/10**12)
 
+    def run_cpp_tof(self, stop_file: str, window: int, start: int, stop: int):
+        csv_file_path = self.generate_csv_name(start, stop, window)
+        # CODE THIS PART WHEN THE C++ CODE IS DONE.
+        pass
+
+    def get_cpp_tof_hist(self, start: int, stop: int, window: int):
+        csv_file_path = self.generate_csv_name(start, stop, window)
+        # Use pandas to read the csv file and get the data from it.
+        pass
+
+    def get_cpp_evse_hist(self, start: int, stop: int, window: int):
+        csv_file_path = self.generate_csv_name(start, stop, window)
+        pass
     
     
     

@@ -1,6 +1,8 @@
+//Start of config
 #include "C:/Users/chloe/AppData/Local/Programs/Python/Python311/include/Python.h"
-#include "C:\Users\chloe\AppData\Local\Programs\Python\Python311\lib\site-packages\pybind11\include\pybind11\pybind11.h"
-#include "C:\Users\chloe\AppData\Local\Programs\Python\Python311\lib\site-packages\pybind11\include\pybind11\numpy.h"
+#include "C:/Users/chloe/AppData/Local/Programs/Python/Python311/Lib/site-packages/pybind11/include/pybind11/numpy.h"
+#include "C:/Users/chloe/AppData/Local/Programs/Python/Python311/Lib/site-packages/pybind11/include/pybind11/pybind11.h"
+//End of config
 #include <vector>
 #include <tuple>
 #include <string>

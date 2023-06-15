@@ -1,0 +1,19 @@
+{
+    "McGill": {
+        "Required Headers": [
+            "C:/ProgramData/Miniconda3/include/Python.h",
+            "C:/Users/Public/Public C++ Headers/pybind11.h",
+            "C:/Users/Public/Public C++ Headers/numpy.h"
+        ],
+        "pybind11": "C:/Users/Public/Public C++ Headers/pybind11.h"
+    },
+    "XPS13": {
+        "Required Headers": [
+            "C:/Users/chloe/AppData/Local/Programs/Python/Python311/include/Python.h",
+            "C:/Users/chloe/AppData/Local/Programs/Python/Python311/Lib/site-packages/pybind11/include/pybind11/numpy.h",
+            "C:/Users/chloe/AppData/Local/Programs/Python/Python311/Lib/site-packages/pybind11/include/pybind11/pybind11.h"
+        ],
+        "pybind11": "C:/Users/chloe/AppData/Local/Programs/Python/Python311/Lib/site-packages/pybind11/include/pybind11/pybind11.h"
+    },
+    "LoadConfig": false
+}
