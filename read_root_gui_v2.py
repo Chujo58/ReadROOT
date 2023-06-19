@@ -17,7 +17,6 @@ import sys as sys
 #----------------------------------------------------------------------------
 # Other imports 
 from . import read_root
-root_reader_v1 = read_root._root_reader
 root_reader = read_root.root_reader_v2
 from . import XML_Parser
 InfoParser = XML_Parser.InfoParser
@@ -204,7 +203,7 @@ def removeItem(combo_box: g.ComboBox, name: str):
 class GUIv2():
     def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True):
         self.ratio = int(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
-        self.dark_theme_on = not dd.isDark()
+        self.dark_theme_on = dd.isDark()
         self.colormap = pg.colormap.getFromMatplotlib("black_turbo") if self.dark_theme_on else pg.colormap.getFromMatplotlib("white_turbo")
         self.margins = int(10/3*self.ratio)
         width, height = self.get_screen_resolution()
@@ -533,16 +532,16 @@ class GUIv2():
         
         #Add the buttons for the different plots:
         self.energy_btn = self.make_comp_btn(self.inner_left, "New Energy Histogram", "Images/EnergyHist.png", column=1, row=1)
-        self.energy_btn.signal_toggled.connect(self.plot_graphs)
+        self.energy_btn.signal_toggled.connect(self.plot_selection)
 
         self.psd_btn = self.make_comp_btn(self.inner_left, "New PSD Histogram", "Images/PSDHist.png", column=1, row=2)
-        self.psd_btn.signal_toggled.connect(self.plot_graphs)
+        self.psd_btn.signal_toggled.connect(self.plot_selection)
         
         self.time_btn = self.make_comp_btn(self.inner_left, "New Time Histogram", "Images/TimeHist.png", column=1, row=3)
-        self.time_btn.signal_toggled.connect(self.plot_graphs)
+        self.time_btn.signal_toggled.connect(self.plot_selection)
 
         self.tof_btn = self.make_comp_btn(self.inner_left, "New TOF (Time of flight) Histogram", "Images/TOFHist.png", column=1, row=4)
-        self.tof_btn.signal_toggled.connect(self.plot_graphs)
+        self.tof_btn.signal_toggled.connect(self.plot_selection)
 
         self.psdvse_btn = self.make_comp_btn(self.inner_left, "New PSD vs Energy Histogram", "Images/PSDvsEnergyHist.png", column=1, row=5)
 
@@ -551,9 +550,13 @@ class GUIv2():
         self.tofvse_btn = self.make_comp_btn(self.inner_left," New TOF (Time of flight) vs Energy Histogram", "Images/TOFvsEnergyHist.png", column=1, row=7)
 
         self.mcs_btn = self.make_comp_btn(self.inner_left, "New MCS Graph", "Images/MCS Graph.png", column=1, row=8)
-        self.mcs_btn.signal_toggled.connect(self.plot_graphs)
+        self.mcs_btn.signal_toggled.connect(self.plot_selection)
 
-        self.clear_btn = self.make_comp_btn(self.inner_left, "Clear plot", "Images/CompClear.png", column=1, row=9)
+        self.plot_btn = self.inner_left.place_object(g.Button(" ", tip="Plot the graph/histogram selected above"), alignment=0, column=1, row=9).set_height(35*self.ratio).set_width(35*self.ratio)
+        self.plot_btn.set_style_unchecked(style="image: url(Images/PlotCompass.png)")
+        self.plot_btn.signal_clicked.connect(self.plot_graphs)
+
+        self.clear_btn = self.make_comp_btn(self.inner_left, "Clear plot", "Images/CompClear.png", column=1, row=10)
         self.clear_btn.signal_toggled.connect(self.clear)
 
         #Adding the databox and the plot
@@ -570,23 +573,23 @@ class GUIv2():
         self.plot_settings_dict = collapsible_grid_layout.place_object(g.TreeDictionary(autosettings_path="GUIv2_plot_dict.txt"),alignment=0).set_width(275*self.ratio)
         self.plot_settings_dict._widget.setHeaderLabels(["Parameters slight long","Value"])
 
-        self.plot_settings_dict.add_parameter("General Settings/Title", value=" ")
+        self.plot_settings_dict.add_parameter("General Settings/Title", value=" ", tip="Title of the graph")
         self.plot_settings_dict.connect_signal_changed("General Settings/Title", self.change_title)
-        self.plot_settings_dict.add_parameter("General Settings/Legend", value=False)
+        self.plot_settings_dict.add_parameter("General Settings/Legend", value=False, tip="Shows the legend of the graph")
         self.plot_settings_dict.connect_signal_changed("General Settings/Legend", self.change_legend)
         
-        self.plot_settings_dict.add_parameter("Line/Name",value=" ")
+        self.plot_settings_dict.add_parameter("Line/Name",value=" ", tip="Name of the line")
         add_color(self.plot_settings_dict, "Line/Pen Color",True)
         add_color(self.plot_settings_dict, "Line/Brush Color",True)
 
-        self.plot_settings_dict.add_parameter("Grid/X Axis",value=True)
+        self.plot_settings_dict.add_parameter("Grid/X Axis",value=True, tip="Shows the X-axis grid")
         self.plot_settings_dict.connect_signal_changed("Grid/X Axis", self.change_grid)
-        self.plot_settings_dict.add_parameter("Grid/Y Axis",value=True)
+        self.plot_settings_dict.add_parameter("Grid/Y Axis",value=True, tip="Shows the Y-axis grid")
         self.plot_settings_dict.connect_signal_changed("Grid/Y Axis", self.change_grid)
 
-        self.plot_settings_dict.add_parameter("Axis/X Label", value=" ")
+        self.plot_settings_dict.add_parameter("Axis/X Label", value=" ", tip="Label of the X-axis")
         self.plot_settings_dict.connect_signal_changed("Axis/X Label", self.change_labels)
-        self.plot_settings_dict.add_parameter("Axis/Y Label", value=" ")
+        self.plot_settings_dict.add_parameter("Axis/Y Label", value=" ", tip="Label of the Y-axis")
         self.plot_settings_dict.connect_signal_changed("Axis/Y Label", self.change_labels)
 
         self.plot_settings_dict.add_parameter("Axis/X Log Scale", value=False)
@@ -603,9 +606,9 @@ class GUIv2():
         self.plot_settings_dict.add_parameter("Axis/Max Y",value=100)
         self.plot_settings_dict.connect_signal_changed("Axis/Max Y", self.change_min_max)
 
-        self.plot_settings_dict.add_parameter("Histogram/Number of bins", value=100)
+        self.plot_settings_dict.add_parameter("Histogram/Number of bins", value=100, tip="X-axis bins")
         self.plot_settings_dict.connect_signal_changed("Histogram/Number of bins", self.change_bin_number)
-        self.plot_settings_dict.add_parameter("Histogram/2D-Histogram bins", value=1024)
+        self.plot_settings_dict.add_parameter("Histogram/Number of bins - Axis #2", value=1024, tip="Y-axis bins (for 2D histograms only)")
         self.plot_settings_dict.add_parameter("Histogram/Fill Level", value=0)
         self.plot_settings_dict.add_parameter("Histogram/Minimum bin", value=0, tip="For TOF and Time histograms")
         self.plot_settings_dict.add_parameter("Histogram/Maximum bin", value=100, tip="For TOF and time histograms")
@@ -646,7 +649,7 @@ class GUIv2():
         self.roi_btn = self.make_channel_btn(button_grid, "SelectROI", 30, self.show_roi, tip="Show region selected by sliders")
         collapse_grid_layout.new_autorow()
 
-        label_start = collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: "))
+        label_start = collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: ", 125*self.ratio))
         collapse_grid_layout.new_autorow()
 
         self.start_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
@@ -660,7 +663,7 @@ class GUIv2():
 
         collapse_grid_layout.new_autorow()
 
-        label_stop = collapse_grid_layout.place_object(IconLabel("Images/stop.png","Stop channel range: "))
+        label_stop = collapse_grid_layout.place_object(IconLabel("Images/stop.png","Stop channel range: ", 125*self.ratio))
         collapse_grid_layout.new_autorow()
 
         self.stop_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
@@ -674,7 +677,8 @@ class GUIv2():
 
         collapse_grid_layout.new_autorow()
 
-        window_label = collapse_grid_layout.place_object(g.Label("Window time: ")).set_width(75*self.ratio)
+        # window_label = collapse_grid_layout.place_object(g.Label("Window time: ")).set_width(75*self.ratio)
+        window_label = collapse_grid_layout.place_object(IconLabel("Images/time.png","Window time: ",75*self.ratio))
 
         self.time_range = collapse_grid_layout.place_object(superqt.QQuantity("10us"))
         self.time_range.setDecimals(2)
@@ -683,7 +687,7 @@ class GUIv2():
         collapse_grid_layout.new_autorow()
 
         start_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0,column_span=2)
-        start_button_grid.place_object(IconLabel("Images/start.png","Start channel: "))
+        start_button_grid.place_object(IconLabel("Images/start.png","Start channel: ", 75*self.ratio))
 
         self.ch0_start_btn = self.make_channel_btn(start_button_grid, "0", 30, self.start_channel_toggling)
         self.ch1_start_btn = self.make_channel_btn(start_button_grid, "1", 30, self.start_channel_toggling)
@@ -695,7 +699,7 @@ class GUIv2():
         collapse_grid_layout.new_autorow()
 
         stop_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
-        stop_button_grid.place_object(IconLabel("Images/stop.png","Stop channel: "))
+        stop_button_grid.place_object(IconLabel("Images/stop.png","Stop channel:  ", 75*self.ratio))
 
         self.ch0_stop_btn = self.make_channel_btn(stop_button_grid, "0", 30, self.stop_channel_toggling)
         self.ch1_stop_btn = self.make_channel_btn(stop_button_grid, "1", 30, self.stop_channel_toggling)
@@ -877,11 +881,8 @@ class GUIv2():
         self.channel_buttons()
 
     def channel_buttons(self, *a):
-        ch0_on = self.ch0_btn.is_checked()
-        ch1_on = self.ch1_btn.is_checked()
-        ch2_on = self.ch2_btn.is_checked()
-        ch3_on = self.ch3_btn.is_checked()
-
+        self.load_states = True
+        self.states = [None, None, None, None]
         # xml_labels = [self.xml_parser.get_ch_label(i) for i in range(0,4)]
         xml_labels = {self.xml_parser.get_ch_label(i)[0]:self.xml_parser.get_ch_label(i)[1] if self.xml_parser.get_ch_label(i)[1] != "CH" else f"CH{self.xml_parser.get_ch_label(i)[0]}" for i in range(0,4)}
 
@@ -1162,16 +1163,35 @@ class GUIv2():
         brush_data = None
         fill_level = None
         type_ = "2D-HIST"
+        
+        transform = QtGui.QTransform()
+        transform.scale(1,1)
 
         if button == "PSDvsE":
-            transform = QtGui.QTransform()
-            transform.scale(1, 1)
-
+            transform.scale(1, 1/self.plot_settings_dict["Histogram/Number of bins - Axis #2"])
+        
         image = pg.ImageItem(image=data)
+        image.setTransform(tr)
+        image.setColormap(self.colormap)
+        self.plot.addItem(image)
+        
+    def enable_buttons(self, buttons_list):
+        for button in buttons_list:
+            button.enable()
+
+    def enable_all_buttons(self):
+        self.enable_buttons(self.buttons_list)
+        self.enable_buttons(self.start_buttons_list)
+        self.enable_buttons(self.stop_buttons_list)
 
     def disable_buttons(self, buttons_list, buttons_states):
         for index, button in enumerate(buttons_list):
             button.enable(value=buttons_states[index])
+
+    def disable_all_buttons(self, buttons_states):
+        self.disable_buttons(self.buttons_list, buttons_states)
+        self.disable_buttons(self.start_buttons_list, buttons_states)
+        self.disable_buttons(self.stop_buttons_list, buttons_states)
 
     def start_TOF(self, *a):
         states = [True if os.stat(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file)).st_size > 7*1024 else False for file in list(self.buttons_files.values())]
@@ -1191,10 +1211,8 @@ class GUIv2():
             self.plot_data(data, "HIST","TOF")
 
     def clean_TOF(self, *a):
-        for button in self.start_buttons_list:
-            button.enable()
-        for button in self.stop_buttons_list:
-            button.enable()
+        self.enable_buttons(self.start_buttons_list)
+        self.enable_buttons(self.stop_buttons_list)
 
         self.root_dict.enable()
 
@@ -1212,8 +1230,6 @@ class GUIv2():
 
             self.plot_data(data, "HIST","ENERGY")
             self.energy_btn.set_checked(False)     
-            return   
-
 
         if self.psd_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD Histogram - CH{btn_checked}"
@@ -1222,7 +1238,6 @@ class GUIv2():
             
             self.plot_data(data, "HIST","PSD")
             self.psd_btn.set_checked(False)
-            return
 
         if self.time_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Time Histogram - CH{btn_checked}"
@@ -1231,21 +1246,15 @@ class GUIv2():
 
             self.plot_data(data, "HIST","TIME")
             self.time_btn.set_checked(False)
-            return
 
         if self.tof_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"TOF Histogram"
             self.start_TOF()
             self.clean_TOF()
             self.tof_btn.set_checked(False)
-            return
 
         if self.psdvse_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD vs Energy Histogram - CH{btn_checked}"
-
-            file_to_use = self.buttons_files.get(str(btn_checked))
-            # data = self.__PSDvsE__(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file_to_use), self.plot_settings_dict)
-            return
         
         if self.mcs_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"MCS Graph - CH{btn_checked}"
@@ -1254,10 +1263,49 @@ class GUIv2():
 
             self.plot_data(data, "GRAPH","MCS")
             self.mcs_btn.set_checked(False)
-            return
 
         plotted_items_names = [item.name() for item in self.plot.listDataItems()]
         self.line_selector.block_signals()
         self.line_selector.clear()
         [self.line_selector.add_item(item) for item in plotted_items_names]
         self.line_selector.unblock_signals()
+        
+        # Enables all the buttons
+        self.enable_all_buttons()
+
+        # Toggle all the buttons out
+        self.toggle_others_out(None, self.buttons_list)
+        self.toggle_others_out(None, self.start_buttons_list)
+        self.toggle_others_out(None, self.stop_buttons_list)
+
+
+    def plot_selection(self, *a):
+        # Disable the buttons that have a file that contains no data.
+        if self.load_states:
+            self.check_thread = QtCore.QThread()
+            self.worker = QtClasses.CheckFiles()
+            QtClasses.CheckFiles.gen_path = [self.complete_path, self.root_dict["ROOT Types/Type chosen"]]
+            QtClasses.CheckFiles.files = self.buttons_files.items()
+            QtClasses.CheckFiles.tree = self.tree
+
+            self.worker.moveToThread(self.check_thread)
+            self.check_thread.started.connect(self.worker.start)
+
+            self.worker.finished.connect(self.check_thread.quit)
+            self.check_thread.finished.connect(self.check_thread.deleteLater)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.worker.progress.connect(self.update_states)
+
+            self.check_thread.start()
+            self.worker.finished.connect(lambda: self.disable_all_buttons(self.states))
+            self.load_states = False
+
+        if a[0]:
+            try: self.disable_all_buttons(self.states)
+            except: pass
+        else:
+            self.enable_all_buttons()
+
+
+    def update_states(self, *a):
+        self.states[a[0][0]] = a[0][1]

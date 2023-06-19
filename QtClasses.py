@@ -1,4 +1,6 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
+import time, os
+import read_root
 
 class bcolors:
     HEADER = '\033[95m'
@@ -15,7 +17,20 @@ class IconLabel(QtWidgets.QWidget):
     IconSize = QtCore.QSize(16,16)
     HorizontalSpacing = 2
 
-    def __init__(self, icon_url: str, text: str, final_stretch=True):
+    def __init__(self, icon_url: str, text: str, width: int, final_stretch=True):
+        """Makes a QLabel with an icon attached to it's left.
+
+        Parameters
+        ----------
+        icon_url : str
+            The image to use for the icon
+        text : str
+            The text to use for the label
+        width : int
+            Size of the widget
+        final_stretch : bool, optional
+            If we stretch the final widget, by default True
+        """
         super(QtWidgets.QWidget, self).__init__()
 
         layout = QtWidgets.QHBoxLayout()
@@ -25,9 +40,12 @@ class IconLabel(QtWidgets.QWidget):
         icon = QtWidgets.QLabel()
         icon.setPixmap(QtGui.QIcon(icon_url).pixmap(self.IconSize))
 
+        text_widget = QtWidgets.QLabel(text)
+        text_widget.setFixedWidth(width)
+
         layout.addWidget(icon)
         layout.addSpacing(self.HorizontalSpacing)
-        layout.addWidget(QtWidgets.QLabel(text))
+        layout.addWidget(text_widget)
 
         if final_stretch:
             layout.addStretch()
@@ -63,3 +81,21 @@ class Seperator(QtWidgets.QWidget):
         layout.addWidget(left_grid)
         layout.addWidget(line)
         layout.addWidget(right_grid)
+
+class CheckFiles(QtCore.QObject):
+    finished = QtCore.pyqtSignal()
+    progress = QtCore.pyqtSignal(list)
+    gen_path = []
+    files = []
+    tree = ""
+
+    def start(self):
+        for index, (key, file) in enumerate(self.files):
+            root = read_root.root_reader_v2(os.path.join(*self.gen_path, file), self.tree)
+            data = root.open()
+            if data is None:
+                self.progress.emit([int(key),False])
+                continue
+            self.progress.emit([int(key),True])
+        self.finished.emit()
+            

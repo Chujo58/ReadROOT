@@ -388,6 +388,9 @@ class root_reader_v2():
     def open(self, raw=False, check_flags=False) -> pandas.DataFrame:
         """Opens the selected file
 
+        .. note::
+        Can return `None` if the file doesn't contain any data.
+
         Parameters
         ----------
         raw : bool, optional
@@ -400,7 +403,11 @@ class root_reader_v2():
         filtered_data : pandas.DataFrame
             Downcasted timestamp data with all the rest of the file's data.
         """
-        root = _ur.open(self.file_path)
+        try:
+            root = _ur.open(self.file_path)
+        except:
+            return
+
         tree = root[self.tree]
         keys = ["Channel", "Timestamp", "Board", "Energy", "EnergyShort", "Flags"]
         data = tree.arrays(keys, library="np")
@@ -422,6 +429,10 @@ class root_reader_v2():
             #  print(list(filtered_dataframe["Flags"]).count(16512))
 
         return filtered_dataframe
+
+    def len(self) -> int:
+        data = self.open()
+        return len(data)
 
     def get_energy_hist(self, default_bins=4096, **kwargs) -> tuple[numpy.array, numpy.array, pandas.Series]:
         """Generates the energy histogram's data
