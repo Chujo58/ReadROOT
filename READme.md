@@ -5,7 +5,7 @@
 **Version =** 2.0
 
 
-** install
+**install**
 1. Create a virtual environment (replace *env_name* with the name of your choice)
 
     ```bash
@@ -38,5 +38,6 @@ Other graphs are not available at the moment. Do note that the log mode is not w
 **Update Log**
 - Added GUI 2.0 (Recolor and rework of the first version)
 - Changed the icons for the CoMPASS tabs.
+- Added the remaining 2D histograms. Need to be coded.
 
 Please refer to the Wiki to know how to use GUI properly.
