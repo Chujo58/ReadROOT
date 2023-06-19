@@ -1,2 +1,9 @@
 .venv
 data
+test
+__pycache__
+.vscode
+egg_settings
+Images/palettes
+*.pyd
+Fonts

@@ -83,7 +83,7 @@ class Seperator(QtWidgets.QWidget):
         layout.addWidget(right_grid)
 
 class CheckFiles(QtCore.QObject):
-    finished = QtCore.pyqtSignal()
+    finished = QtCore.pyqtSignal(int)
     progress = QtCore.pyqtSignal(list)
     gen_path = []
     files = []
@@ -97,5 +97,5 @@ class CheckFiles(QtCore.QObject):
                 self.progress.emit([int(key),False])
                 continue
             self.progress.emit([int(key),True])
-        self.finished.emit()
+        self.finished.emit(10)
             

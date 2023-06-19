@@ -21,6 +21,88 @@ except:
 # from scipy import asarray as ar,exp
 
 
+def define_cut(start: int, stop: int, data_set: pandas.DataFrame) -> numpy.array:
+    """Finds the indexes that are within a given cut
+
+    Parameters
+    ----------
+    start : U16
+        Start of the cut (minimum value)
+    stop : U16
+        Stop of the cut (maximum value)
+    data_set : pandas.DataFrame
+        Data set on which we perform a cut.
+
+    Returns
+    -------
+    output : numpy.array
+        Array containing the indexes that match the cut.
+    """
+    return np.where((start <= data_set) & (data_set <= stop))[0]
+
+
+def get_unfiltered(data: pandas.DataFrame) -> pandas.DataFrame:
+    """Removes the pileup and saturation events from the selected dataset
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Dataset from which we remove the pileup and saturation events
+
+    Returns
+    -------
+    unfiltered_data : pandas.DataFrame
+        Unfiltered dataset
+    """
+    indexes = numpy.where(data["Flags"] == 16384)[0]
+    temp_dict = {}
+    for key in data.keys():
+        temp_dict[key] = data[key][indexes]
+
+    return pandas.DataFrame(temp_dict)    
+
+
+def generate_csv_name(file_path, start: int, stop: int, window: int) -> str:
+    """Generates the csv file path where the C++ TOF will save its data.
+
+    Parameters
+    ----------
+    start : int
+        Start channel number
+    stop : int
+        Stop channel number
+    window : int
+        Time window for the TOF
+
+    Returns
+    -------
+    file_path : str
+        File path for the csv
+    """
+    list_output = file_path.split("/")
+    if len(list_output) == 1:
+        list_output = file_path.split("\\")
+
+    list_output[0] = f"{list_output[0]}\\"
+    where_to_save = _os.path.join(*list_output[0:-3])
+    run_folder = list_output[-3]
+    tree_folder = list_output[-2]
+    csv_name = f"{run_folder}_{tree_folder}_CH{start}-CH{stop}_{window}.csv"
+
+    directory = _os.path.join(where_to_save, run_folder, "TOF Data")
+    if not _os.path.exists(directory):
+        _os.mkdir(directory)
+
+    return _os.path.join(directory, csv_name)
+
+def get_cpp_tof_hist(file_path: str, min_: int, max_: int, default_bins=8192):
+    df = pandas.read_csv(file_path, compression="bz2")
+    delta_time = (numpy.array(df["Stop Time"]) - numpy.array(df["Start Time"]))*1e-3
+
+    hist = numpy.histogram(delta_time, default_bins, range=(min_, max_))
+    y, x = hist
+    return (x, y, delta_time)
+
 class _root_reader():
     """
     A file reader capable of getting information from a `.root` file format and returning the information in a more understandable format.
@@ -335,54 +417,6 @@ class root_reader_v2():
         psd_values = psd_func(data["Energy"], data["EnergyShort"])
         data.insert(2, "PSD", psd_values)
 
-    @staticmethod
-    def get_unfiltered(data: pandas.DataFrame) -> pandas.DataFrame:
-        """Removes the pileup and saturation events from the selected dataset
-
-        Parameters
-        ----------
-        data : pandas.DataFrame
-            Dataset from which we remove the pileup and saturation events
-
-        Returns
-        -------
-        unfiltered_data : pandas.DataFrame
-            Unfiltered dataset
-        """
-        indexes = numpy.where(data["Flags"] == 16384)[0]
-        temp_dict = {}
-        for key in data.keys():
-            temp_dict[key] = data[key][indexes]
-
-        return pandas.DataFrame(temp_dict)    
-
-    def generate_csv_name(self, start: int, stop: int, window: int) -> str:
-        """Generates the csv file path where the C++ TOF will save its data.
-
-        Parameters
-        ----------
-        start : int
-            Start channel number
-        stop : int
-            Stop channel number
-        window : int
-            Time window for the TOF
-
-        Returns
-        -------
-        file_path : str
-            File path for the csv
-        """
-        list_output = self.file_path.split("/")
-        if len(list_output) == 1:
-            list_output = self.file_path.split("\\")
-
-        list_output[0] = f"{list_output[0]}\\"
-        where_to_save = _os.path.join(*list_output[0:-3])
-        run_folder = list_output[-3]
-        tree_folder = list_output[-2]
-        csv_name = f"{run_folder}_{tree_folder}_CH{start}-CH{stop}_{window}.csv"
-        return _os.path.join(where_to_save, run_folder, "C++ Data", csv_name)
 
 
     def open(self, raw=False, check_flags=False) -> pandas.DataFrame:
@@ -412,6 +446,9 @@ class root_reader_v2():
         keys = ["Channel", "Timestamp", "Board", "Energy", "EnergyShort", "Flags"]
         data = tree.arrays(keys, library="np")
 
+        if len(data["Channel"]) == 0:
+            return
+
         filtered_dataframe = pandas.DataFrame(data)
 
         if not raw:
@@ -427,6 +464,8 @@ class root_reader_v2():
             for flag in flags:
                 print(list(filtered_dataframe["Flags"]).count(flag), flag)
             #  print(list(filtered_dataframe["Flags"]).count(16512))
+
+        root.close()
 
         return filtered_dataframe
 
@@ -628,10 +667,7 @@ class root_reader_v2():
         # CODE THIS PART WHEN THE C++ CODE IS DONE.
         pass
 
-    def get_cpp_tof_hist(self, start: int, stop: int, window: int):
-        csv_file_path = self.generate_csv_name(start, stop, window)
-        # Use pandas to read the csv file and get the data from it.
-        pass
+    
 
     def get_cpp_evse_hist(self, start: int, stop: int, window: int):
         csv_file_path = self.generate_csv_name(start, stop, window)

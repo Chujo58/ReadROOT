@@ -1,4 +1,4 @@
 /GUI/Files Settings|expanded	True
-/GUI/Files Settings/Folder	'UNFILTERED'
+/GUI/Files Settings/Folder	'RAW'
 /GUI/Files Settings/Folder|expanded	True
 

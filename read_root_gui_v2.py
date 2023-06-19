@@ -15,17 +15,26 @@ This code is able to reproduce the important graphs that the CoMPASS software ma
 import os as os
 import sys as sys
 #----------------------------------------------------------------------------
-# Other imports 
+# Other imports from ReadROOT
+# Import the root reader API:
 from . import read_root
 root_reader = read_root.root_reader_v2
+# Import the XML file parsing and info parsing (used for the CoMPASS tab):
 from . import XML_Parser
 InfoParser = XML_Parser.InfoParser
 XMLParser = XML_Parser.XMLParser
+# Import QtClasses for extra widgets (used for the GUI):
 from . import QtClasses
 IconLabel = QtClasses.IconLabel
 Seperator = QtClasses.Seperator
 IconLabel.IconSize = IconLabel.new_icon_size(35)
 bcolors = QtClasses.bcolors
+# Import the Merger (Fast TOF calculations):
+from . import merge
+Merger = merge.Merger
+Converter = merge.Converter
+#----------------------------------------------------------------------------
+# General libraries imports
 import spinmob as s
 import spinmob.egg as egg
 import numpy as np
@@ -44,6 +53,7 @@ from . import ErrorPropagation as ep
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import cm
 import superqt, time
+#----------------------------------------------------------------------------
 
 g = egg.gui
 
@@ -640,12 +650,44 @@ class GUIv2():
                 border-radius: 5px;
                 background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(111,205,231), stop:1 rgb(104,104,161));
             }
+            QPushButton:disabled{
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(159,159,159), stop:1 rgb(110,110,110));
+                color: white;
+            }
+        """
+
+        dark_theme = """
+            QPushButton{
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(120,225,252), stop:1 rgb(119,119,170));
+                color: black;
+            }
+            QPushButton:checked {
+                border: 2px solid rgb(30,30,30);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(61,145,169), stop:1 rgb(78,78,128));
+                color: white;
+            }
+            QPushButton:hover{
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(111,205,231), stop:1 rgb(104,104,161));
+            }
+            QPushButton:disabled{
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(159,159,159), stop:1 rgb(110,110,110));
+                color: white;
+            }
         """
 
         button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
 
-        self.cpp_tof_btn = button_grid.place_object(g.Button("Use C++ TOF functions", checkable=True)).set_width(240*self.ratio)
-        self.cpp_tof_btn._widget.setStyleSheet(light_theme)
+        self.cpp_tof_btn = button_grid.place_object(g.Button("Calculate TOF", checkable=True)).set_width(240*self.ratio)
+        self.cpp_tof_btn._widget.setStyleSheet(dark_theme) if self.dark_theme_on else self.cpp_tof_btn._widget.setStyleSheet(light_theme)
         self.roi_btn = self.make_channel_btn(button_grid, "SelectROI", 30, self.show_roi, tip="Show region selected by sliders")
         collapse_grid_layout.new_autorow()
 
@@ -726,7 +768,6 @@ class GUIv2():
     def make_channel_btn(self, parent, channel_number, size, function, tip: str=None, off: str=None, on:str=None, disabled:str=None):
         tip = f"Channel {channel_number}" if tip is None else tip
         button = parent.place_object(g.Button(" ", True, tip=tip)).set_width(size*self.ratio).set_height(size*self.ratio)
-        # QSS_Light = "QPushButton: {" + f"image: url(Images/Off{channel_number}.png);" + "}" + "QPushButton::pressed{" + f"image: url(Images/On{channel_number}.png); border: 2px solid rgb(1,196,255); background: {'(54,54,54)' if self.dark_theme_on else '(220,220,220)'}" + "}"  
 
         off = "Off" if off is None else off
         on = "On" if on is None else on
@@ -882,6 +923,7 @@ class GUIv2():
 
     def channel_buttons(self, *a):
         self.load_states = True
+        self.rerun_tof = True
         self.states = [None, None, None, None]
         # xml_labels = [self.xml_parser.get_ch_label(i) for i in range(0,4)]
         xml_labels = {self.xml_parser.get_ch_label(i)[0]:self.xml_parser.get_ch_label(i)[1] if self.xml_parser.get_ch_label(i)[1] != "CH" else f"CH{self.xml_parser.get_ch_label(i)[0]}" for i in range(0,4)}
@@ -1194,34 +1236,74 @@ class GUIv2():
         self.disable_buttons(self.stop_buttons_list, buttons_states)
 
     def start_TOF(self, *a):
-        states = [True if os.stat(os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"], file)).st_size > 7*1024 else False for file in list(self.buttons_files.values())]
-        two_files_pass = True if states.count(True) >= 2 else False
-        self.disable_buttons(self.start_buttons_list,states)
-        self.disable_buttons(self.stop_buttons_list,states)
+        two_files_pass = True if self.states.count(True) >= 2 else False
         start_btn = self.what_btn_is_checked(self.start_buttons_list)
         stop_btn = self.what_btn_is_checked(self.stop_buttons_list)
         
+        time_window = int(self.time_range.value().to("picosecond").magnitude)
+
+        start_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(start_btn)))
+        stop_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(stop_btn)))
+
+        
         if self.root_dict["ROOT Types/Type chosen"] == "FILTERED" and two_files_pass:
             self.root_dict.disable()
-            start_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(start_btn)))
-            stop_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(stop_btn)))
 
             data = root_reader(start_file, self.tree).get_tof_hist(stop_file, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"])
             
-            self.plot_data(data, "HIST","TOF")
+            self.plot_data(data, "HIST", "TOF")
 
-    def clean_TOF(self, *a):
-        self.enable_buttons(self.start_buttons_list)
-        self.enable_buttons(self.stop_buttons_list)
+        if self.root_dict["ROOT Types/Type chosen"] == "RAW" and two_files_pass and (self.rerun_tof or self.cpp_tof_btn.is_checked()):
+            self.csv_name = read_root.generate_csv_name(start_file, start_btn, stop_btn, time_window)
+            
+            self.root_dict.disable()
+            self.cpp_tof_btn.disable()
 
+            self.tof_thread = QtCore.QThread()
+            self.merger = Merger(start_file, stop_file, window=time_window)
+
+            self.merger.moveToThread(self.tof_thread)
+            self.tof_thread.started.connect(self.merger.merge)
+
+            self.merger.finished.connect(self.tof_thread.quit)
+            self.merger.finished.connect(lambda x: Converter(x).save(self.csv_name))
+            self.tof_thread.finished.connect(self.tof_thread.deleteLater)
+            self.merger.finished.connect(self.merger.deleteLater)
+            
+            self.merger.finished.connect(lambda: self.plot_data(read_root.get_cpp_tof_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"]), "HIST", "TOF"))
+            
+            self.merger.finished.connect(self.clean_up)
+            self.merger.finished.connect(lambda: self.tof_btn.set_checked(False))
+            
+            self.tof_thread.start()
+            self.rerun_tof = False
+
+
+    def clean_up(self, *a):
         self.root_dict.enable()
+        self.cpp_tof_btn.enable()
+
+        # Enables all the buttons
+        self.enable_all_buttons()
+
+        # Toggle all the buttons out
+        self.toggle_others_out(None, self.buttons_list)
+        self.toggle_others_out(None, self.start_buttons_list)
+        self.toggle_others_out(None, self.stop_buttons_list)
+
+        plotted_items_names = [item.name() for item in self.plot.listDataItems()]
+        self.line_selector.block_signals()
+        self.line_selector.clear()
+        [self.line_selector.add_item(item) for item in plotted_items_names]
+        self.line_selector.unblock_signals()
 
         
 
     def plot_graphs(self, *a):
         btn_checked = self.what_btn_is_checked(self.buttons_list)
-        file_to_use = self.buttons_files.get(str(btn_checked))
-        path_to_use = os.path.join(self.complete_path, self.root_dict["ROOT Types/Type chosen"], file_to_use)
+        if btn_checked is not None:
+            file_to_use = self.buttons_files.get(str(btn_checked))
+            path_to_use = os.path.join(self.complete_path, self.root_dict["ROOT Types/Type chosen"], file_to_use)
 
         if self.energy_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Energy Histogram - CH{btn_checked}"
@@ -1229,7 +1311,8 @@ class GUIv2():
             data = root_reader(path_to_use, self.tree).get_energy_hist(bins=self.plot_settings_dict["Histogram/Number of bins"])
 
             self.plot_data(data, "HIST","ENERGY")
-            self.energy_btn.set_checked(False)     
+            self.energy_btn.set_checked(False)
+            self.clean_up()
 
         if self.psd_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD Histogram - CH{btn_checked}"
@@ -1238,6 +1321,7 @@ class GUIv2():
             
             self.plot_data(data, "HIST","PSD")
             self.psd_btn.set_checked(False)
+            self.clean_up()
 
         if self.time_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Time Histogram - CH{btn_checked}"
@@ -1246,15 +1330,15 @@ class GUIv2():
 
             self.plot_data(data, "HIST","TIME")
             self.time_btn.set_checked(False)
+            self.clean_up()
 
         if self.tof_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"TOF Histogram"
             self.start_TOF()
-            self.clean_TOF()
-            self.tof_btn.set_checked(False)
 
         if self.psdvse_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD vs Energy Histogram - CH{btn_checked}"
+            self.clean_up()
         
         if self.mcs_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"MCS Graph - CH{btn_checked}"
@@ -1263,20 +1347,14 @@ class GUIv2():
 
             self.plot_data(data, "GRAPH","MCS")
             self.mcs_btn.set_checked(False)
+            self.clean_up()
 
-        plotted_items_names = [item.name() for item in self.plot.listDataItems()]
-        self.line_selector.block_signals()
-        self.line_selector.clear()
-        [self.line_selector.add_item(item) for item in plotted_items_names]
-        self.line_selector.unblock_signals()
-        
-        # Enables all the buttons
-        self.enable_all_buttons()
+        # plotted_items_names = [item.name() for item in self.plot.listDataItems()]
+        # self.line_selector.block_signals()
+        # self.line_selector.clear()
+        # [self.line_selector.add_item(item) for item in plotted_items_names]
+        # self.line_selector.unblock_signals()
 
-        # Toggle all the buttons out
-        self.toggle_others_out(None, self.buttons_list)
-        self.toggle_others_out(None, self.start_buttons_list)
-        self.toggle_others_out(None, self.stop_buttons_list)
 
 
     def plot_selection(self, *a):

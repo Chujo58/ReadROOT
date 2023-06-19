@@ -1,59 +1,13 @@
-/GUI/Choose plot|expanded	True
-/GUI/Choose plot/Energy Histogram	True
-/GUI/Choose plot/Energy Histogram|expanded	True
-/GUI/Choose plot/TOF Histogram	False
-/GUI/Choose plot/TOF Histogram|expanded	True
-/GUI/Choose plot/MCS Graph	False
-/GUI/Choose plot/MCS Graph|expanded	True
-/GUI/Plot Settings|expanded	True
-/GUI/Plot Settings/Title	'900V (Red) vs 1100V (Green) Cs137 Spectrum'
-/GUI/Plot Settings/Title|expanded	True
-/GUI/Plot Settings/Legend	True
-/GUI/Plot Settings/Legend|expanded	True
-/GUI/Plot Settings/Grid|expanded	True
-/GUI/Plot Settings/Grid/x	True
-/GUI/Plot Settings/Grid/x|expanded	True
-/GUI/Plot Settings/Grid/y	True
-/GUI/Plot Settings/Grid/y|expanded	True
-/GUI/Plot Settings/Axes label|expanded	True
-/GUI/Plot Settings/Axes label/x	'ADC bins'
-/GUI/Plot Settings/Axes label/x|expanded	True
-/GUI/Plot Settings/Axes label/y	'Counts'
-/GUI/Plot Settings/Axes label/y|expanded	True
-/GUI/Plot Settings/Axes limits|expanded	True
-/GUI/Plot Settings/Axes limits/x min	150
-/GUI/Plot Settings/Axes limits/x min|expanded	True
-/GUI/Plot Settings/Axes limits/x max	6500
-/GUI/Plot Settings/Axes limits/x max|expanded	True
-/GUI/Plot Settings/Axes limits/y min	1
-/GUI/Plot Settings/Axes limits/y min|expanded	True
-/GUI/Plot Settings/Axes limits/y max	800
-/GUI/Plot Settings/Axes limits/y max|expanded	True
-/GUI/Plot Settings/Log scale|expanded	True
-/GUI/Plot Settings/Log scale/x	False
-/GUI/Plot Settings/Log scale/x|expanded	True
-/GUI/Plot Settings/Log scale/y	False
-/GUI/Plot Settings/Log scale/y|expanded	True
-/GUI/Plot Settings/Line Color|expanded	True
-/GUI/Plot Settings/Line Color/Red	255
-/GUI/Plot Settings/Line Color/Red|expanded	True
-/GUI/Plot Settings/Line Color/Green	255
-/GUI/Plot Settings/Line Color/Green|expanded	True
-/GUI/Plot Settings/Line Color/Blue	255
-/GUI/Plot Settings/Line Color/Blue|expanded	True
-/GUI/Plot Settings/Line Color/Alpha	100
-/GUI/Plot Settings/Line Color/Alpha|expanded	True
-/GUI/Plot Settings/Fill Color|expanded	True
-/GUI/Plot Settings/Fill Color/Red	255
-/GUI/Plot Settings/Fill Color/Red|expanded	True
-/GUI/Plot Settings/Fill Color/Green	0
-/GUI/Plot Settings/Fill Color/Green|expanded	True
-/GUI/Plot Settings/Fill Color/Blue	0
-/GUI/Plot Settings/Fill Color/Blue|expanded	True
-/GUI/Plot Settings/Fill Color/Alpha	50
-/GUI/Plot Settings/Fill Color/Alpha|expanded	True
-/GUI/Plot Settings/Line Color/HEX CODE	'000000'
-/GUI/Plot Settings/Line Color/HEX CODE|expanded	True
-/GUI/Plot Settings/Fill Color/HEX CODE	'44f84f2'
-/GUI/Plot Settings/Fill Color/HEX CODE|expanded	True
+/GUI/First channel region|expanded	True
+/GUI/First channel region/Low cut	'10692.4'
+/GUI/First channel region/Low cut|expanded	True
+/GUI/First channel region/High cut	'12281.0'
+/GUI/First channel region/High cut|expanded	True
+/GUI/Second channel region|expanded	True
+/GUI/Second channel region/Low cut	'0'
+/GUI/Second channel region/Low cut|expanded	True
+/GUI/Second channel region/High cut	'0'
+/GUI/Second channel region/High cut|expanded	True
+/GUI/Window	'96'
+/GUI/Window|expanded	True
 
