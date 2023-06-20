@@ -1,5 +1,6 @@
 from PyQt5 import QtCore, QtWidgets, QtGui
-import time, os
+from spinmob.egg import gui as g
+import time, os, superqt
 import read_root
 
 class bcolors:
@@ -83,7 +84,7 @@ class Seperator(QtWidgets.QWidget):
         layout.addWidget(right_grid)
 
 class CheckFiles(QtCore.QObject):
-    finished = QtCore.pyqtSignal(int)
+    finished = QtCore.pyqtSignal()
     progress = QtCore.pyqtSignal(list)
     gen_path = []
     files = []
@@ -97,5 +98,45 @@ class CheckFiles(QtCore.QObject):
                 self.progress.emit([int(key),False])
                 continue
             self.progress.emit([int(key),True])
-        self.finished.emit(10)
+        self.finished.emit()
             
+class SelectionBox(QtCore.QObject):
+    on_save = QtCore.pyqtSignal(str)
+    def __init__(self):
+        super(QtCore.QObject, self).__init__()
+        self.grid = g.GridLayout(False)
+        self._searchable_combo = self.grid.place_object(superqt.QSearchableComboBox())
+        self._save_btn = self.grid.place_object(g.Button(" "))
+        self._save_btn.signal_clicked.connect(self._save_btn_clicked)
+
+    def add_items(self, items):
+        self._searchable_combo.addItems(items)
+        self._searchable_combo.adjustSize()
+
+    def clear(self):
+        self._searchable_combo.clear()
+
+    def _save_btn_clicked(self, *a):
+        self.on_save.emit(self._searchable_combo.currentText())
+
+    def change_icon(self, icon):
+        self._save_btn.set_style_unchecked(style=f"image: url(Images/{icon})")
+
+    def set_height(self, value):
+        self._searchable_combo.setFixedHeight(value)
+        self._save_btn.set_height(value).set_width(value)
+
+    
+
+
+
+if __name__ == "__main__":
+    w = g.Window()
+    obj = SelectionBox()
+    obj.change_icon("SelectDark.png")
+    obj.set_height(75)
+    t = w.place_object(obj.grid)
+    to_add = list(os.listdir("Images"))
+    obj.add_items(to_add)
+    obj.on_save.connect(lambda x: print(x))
+    w.show(True)

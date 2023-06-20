@@ -103,6 +103,58 @@ def get_cpp_tof_hist(file_path: str, min_: int, max_: int, default_bins=8192):
     y, x = hist
     return (x, y, delta_time)
 
+def get_cpp_evse_hist(file_path: str, xbins: int, ybins: int) -> tuple[numpy.array, numpy.array, numpy.ndarray]:
+    """Generates the Energy vs Energy 2D histogram
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the csv file containing the time and energy information
+    xbins : int
+        Number of bins on the x-axis
+    ybins : int
+        Number of bins on the y-axis
+
+    Returns
+    -------
+    output: tuple[numpy.array, numpy.array, numpy.ndarray]
+        Tuple containing the x bins, y bins and the density (z axis counts) calculated the histogram.
+    """
+    df = pandas.read_csv(file_path, compression="bz2")
+
+    density, xedge, yedge = numpy.histogram2d(df["Start Energy"], df["Stop Energy"], (xbins, ybins))
+    return (xedge, yedge, density)
+
+def get_cpp_tofvse_hist(file_path: str, min_: int, max_: int, default_energy_bins=4096, default_tof_bins=8192) -> tuple[numpy.array, numpy.array, numpy.ndarray]:
+    """Generates the TOF vs Energy 2D histogram
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the csv file containing the time and energy information
+    min_ : int
+        Minimum time for the TOF bins
+    max_ : int
+        Maximum time for the TOF bins
+    default_energy_bins : int, optional
+        Number of bins to use for the X axis, by default 4096
+    default_tof_bins : int, optional
+        Number of bins to use for the Y axis, by default 8192
+
+    Returns
+    -------
+    output: tuple[numpy.array, numpy.array, numpy.ndarray]
+        Tuple containing the x bins, y bins and the density (z axis counts) calculated the histogram.
+    """
+    df = pandas.read_csv(file_path, compression="bz2")
+    min_e = min(df["Stop Energy"])
+    max_e = max(df["Stop Energy"])
+    
+    tof_data = get_cpp_tof_hist(file_path, min_, max_, default_tof_bins)[2] #Grab only the time differences
+    density, xedge, yedge = numpy.histogram2d(df["Stop Energy"], tof_data, [default_energy_bins, default_tof_bins], ((min_e,max_e),(min_,max_)))
+    return (xedge, yedge, density)
+
+
 class _root_reader():
     """
     A file reader capable of getting information from a `.root` file format and returning the information in a more understandable format.
@@ -567,7 +619,7 @@ class root_reader_v2():
         y, x = hist
         return (x, y, delta_time)
 
-    def get_evse_hist(self, stop_file: str, xbins: int, ybins: int) -> tuple[numpy.array, numpy.array, numpy.array]:
+    def get_evse_hist(self, stop_file: str, xbins: int, ybins: int) -> tuple[numpy.array, numpy.array, numpy.ndarray]:
         """Generates the Energy vs Energy 2D histogram's data from a file with the TTree key `Data_F`
 
         .. note::
@@ -584,7 +636,7 @@ class root_reader_v2():
 
         Returns
         -------
-        output_tuple: tuple[numpy.array, numpy.array, numpy.array]
+        output_tuple: tuple[numpy.array, numpy.array, numpy.ndarray]
             Tuple containing the x bins, y bins and the density (z axis counts) calculated the the histogram.
         """
         data_start = self.open()
@@ -617,7 +669,7 @@ class root_reader_v2():
         output_tuple : tuple[numpy.array, numpy.array, numpy.array]
             Tuple containing the x bins, y bins and the density (z axis counts) calculated by the histogram.
         """
-        tof_data = self.get_tof_hist(stop_file,min_,max_, default_tof_bins)
+        tof_data = self.get_tof_hist(stop_file,min_,max_, default_tof_bins)[2]
         stop_data = root_reader_v2(stop_file, self.tree).open()
         min_e = min(stop_data["Energy"])
         max_e = max(stop_data["Energy"])
@@ -669,9 +721,6 @@ class root_reader_v2():
 
     
 
-    def get_cpp_evse_hist(self, start: int, stop: int, window: int):
-        csv_file_path = self.generate_csv_name(start, stop, window)
-        pass
     
     
     

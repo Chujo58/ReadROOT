@@ -27,6 +27,7 @@ XMLParser = XML_Parser.XMLParser
 from . import QtClasses
 IconLabel = QtClasses.IconLabel
 Seperator = QtClasses.Seperator
+SelectionBox = QtClasses.SelectionBox
 IconLabel.IconSize = IconLabel.new_icon_size(35)
 bcolors = QtClasses.bcolors
 # Import the Merger (Fast TOF calculations):
@@ -52,7 +53,7 @@ from scipy.optimize import curve_fit as cf
 from . import ErrorPropagation as ep
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import cm
-import superqt, time
+import superqt, datetime
 #----------------------------------------------------------------------------
 
 g = egg.gui
@@ -554,19 +555,26 @@ class GUIv2():
         self.tof_btn.signal_toggled.connect(self.plot_selection)
 
         self.psdvse_btn = self.make_comp_btn(self.inner_left, "New PSD vs Energy Histogram", "Images/PSDvsEnergyHist.png", column=1, row=5)
+        self.psdvse_btn.signal_toggled.connect(self.plot_selection)
 
         self.evse_btn = self.make_comp_btn(self.inner_left, "New Energy vs Energy Histogram", "Images/EnergyvsEnergyHist.png", column=1, row=6)
+        self.evse_btn.signal_toggled.connect(self.plot_selection)
 
         self.tofvse_btn = self.make_comp_btn(self.inner_left," New TOF (Time of flight) vs Energy Histogram", "Images/TOFvsEnergyHist.png", column=1, row=7)
+        self.tofvse_btn.signal_toggled.connect(self.plot_selection)
 
         self.mcs_btn = self.make_comp_btn(self.inner_left, "New MCS Graph", "Images/MCS Graph.png", column=1, row=8)
         self.mcs_btn.signal_toggled.connect(self.plot_selection)
 
-        self.plot_btn = self.inner_left.place_object(g.Button(" ", tip="Plot the graph/histogram selected above"), alignment=0, column=1, row=9).set_height(35*self.ratio).set_width(35*self.ratio)
+        self.snapshot_btn = self.inner_left.place_object(g.Button(" ", tip="Snapshot"), alignment=0, column=1, row=9).set_height(35*self.ratio).set_width(35*self.ratio)
+        self.snapshot_btn.set_style_unchecked(style="image: url(Images/SaveCompass.png)")
+        self.snapshot_btn.signal_clicked.connect(self.save_snapshot)
+
+        self.plot_btn = self.inner_left.place_object(g.Button(" ", tip="Plot the graph/histogram selected above"), alignment=0, column=1, row=10).set_height(35*self.ratio).set_width(35*self.ratio)
         self.plot_btn.set_style_unchecked(style="image: url(Images/PlotCompass.png)")
         self.plot_btn.signal_clicked.connect(self.plot_graphs)
 
-        self.clear_btn = self.make_comp_btn(self.inner_left, "Clear plot", "Images/CompClear.png", column=1, row=10)
+        self.clear_btn = self.make_comp_btn(self.inner_left, "Clear plot", "Images/CompClear.png", column=1, row=11)
         self.clear_btn.signal_toggled.connect(self.clear)
 
         #Adding the databox and the plot
@@ -616,9 +624,9 @@ class GUIv2():
         self.plot_settings_dict.add_parameter("Axis/Max Y",value=100)
         self.plot_settings_dict.connect_signal_changed("Axis/Max Y", self.change_min_max)
 
-        self.plot_settings_dict.add_parameter("Histogram/Number of bins", value=100, tip="X-axis bins")
-        self.plot_settings_dict.connect_signal_changed("Histogram/Number of bins", self.change_bin_number)
-        self.plot_settings_dict.add_parameter("Histogram/Number of bins - Axis #2", value=1024, tip="Y-axis bins (for 2D histograms only)")
+        self.plot_settings_dict.add_parameter("Histogram/X Axis bins", value=100, tip="X-axis bins")
+        self.plot_settings_dict.connect_signal_changed("Histogram/X Axis bins", self.change_bin_number)
+        self.plot_settings_dict.add_parameter("Histogram/Y Axis bins", value=1024, tip="Y-axis bins (for 2D histograms only)")
         self.plot_settings_dict.add_parameter("Histogram/Fill Level", value=0)
         self.plot_settings_dict.add_parameter("Histogram/Minimum bin", value=0, tip="For TOF and Time histograms")
         self.plot_settings_dict.add_parameter("Histogram/Maximum bin", value=100, tip="For TOF and time histograms")
@@ -691,6 +699,9 @@ class GUIv2():
         self.roi_btn = self.make_channel_btn(button_grid, "SelectROI", 30, self.show_roi, tip="Show region selected by sliders")
         collapse_grid_layout.new_autorow()
 
+        #MAKE SOMETHING FOR THE FILE SELECTION!
+        collapse_grid_layout.new_autorow()
+
         label_start = collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: ", 125*self.ratio))
         collapse_grid_layout.new_autorow()
 
@@ -758,6 +769,11 @@ class GUIv2():
 
 
         parent.addWidget(collapse_grid_layout._widget)
+
+    def choose_csv_to_plot(self, parent):
+        grid = g.GridLayout(False)
+        search_combo = grid.place_object(superqt.QSearchableComboBox())
+        
 
     def make_comp_btn(self, parent, tip_text, url_image, **kwargs):
         btn = parent.place_object(g.Button(" ", checkable=True, tip=tip_text), alignment=0, **kwargs).set_height(35*self.ratio).set_width(35*self.ratio)
@@ -849,6 +865,8 @@ class GUIv2():
         run_dict_keys = list(self.run_dict.get_keys())
         for index, key in enumerate(run_dict_keys):
             self.run_dict[key] = run_information[index]
+
+        self.plot_settings_dict["General Settings/Title"] = run_information[0]
 
         self.xml_parser = XMLParser(xml_file_path)
         board_properties = self.xml_parser.get_board_properties()
@@ -1003,7 +1021,7 @@ class GUIv2():
         #Get the old values
         old_start_values = np.array(self.start_range_hslider.value())
         old_stop_values = np.array(self.stop_range_hslider.value())
-        new_stop_range = self.plot_settings_dict["Histogram/Number of bins"]
+        new_stop_range = self.plot_settings_dict["Histogram/X Axis bins"]
         
         ratio = new_stop_range/self.old_stop_range
 
@@ -1013,7 +1031,7 @@ class GUIv2():
 
         self.start_range_hslider.setRange(0, new_stop_range)
         self.start_range_hslider.setValue(new_start_values)
-        self.stop_range_hslider.setRange(0, self.plot_settings_dict["Histogram/Number of bins"])
+        self.stop_range_hslider.setRange(0, self.plot_settings_dict["Histogram/X Axis bins"])
         self.stop_range_hslider.setValue(new_stop_values)
         self.old_stop_range = new_stop_range
 
@@ -1038,24 +1056,34 @@ class GUIv2():
                 break
             
             if line == line_selected:
-                pen_data = self.pens[line].copy()
-                brush_data = self.brushes[line].copy()
-                pen_data[3] = 255
-                pen = pg.mkPen(pen_data)
-                brush = pg.mkBrush(brush_data)
+                if self.graph_info[line]["style"] != "2D-HIST":
+                    pen_data = self.pens[line].copy()
+                    brush_data = self.brushes[line].copy()
+                    pen_data[3] = 255
+                    pen = pg.mkPen(pen_data)
+                    brush = pg.mkBrush(brush_data)
 
-                self.lines[line].setPen(pen)
-                self.lines[line].setBrush(brush)
+                    self.lines[line].setPen(pen)
+                    self.lines[line].setBrush(brush)
+                    continue
+                
+                self.lines[line].setOpts(opacity=1)
+                
             else:
-                pen_data = self.pens[line].copy()
-                brush_data = self.brushes[line].copy()
-                pen_data[3] = 128
-                brush_data[3] = brush_data[3]/2
-                pen = pg.mkPen(pen_data)
-                brush = pg.mkBrush(brush_data)
+                if self.graph_info[line]["style"] != "2D-HIST":
+                    pen_data = self.pens[line].copy()
+                    brush_data = self.brushes[line].copy()
+                    pen_data[3] = 128
+                    brush_data[3] = brush_data[3]/2
+                    pen = pg.mkPen(pen_data)
+                    brush = pg.mkBrush(brush_data)
 
-                self.lines[line].setPen(pen)
-                self.lines[line].setBrush(brush)
+                    self.lines[line].setPen(pen)
+                    self.lines[line].setBrush(brush)
+                    continue
+
+                self.lines[line].setOpts(opacity=0.25)
+                
 
         self.previous_line = line_selected
 
@@ -1076,14 +1104,19 @@ class GUIv2():
             index = self.line_selector.get_index("No lines for now.")
             self.line_selector.remove_item(index)
 
-        #Get the data for the line:
-        x_data, y_data = self.lines[line_selected].getData()
-        raw_data = self.data[line_selected]
         #Get the type and style of line we plot:
         style = self.graph_info[line_selected].get("style")
         type_ = self.graph_info[line_selected].get("type")
         #Get the number of bins in use:
-        bins = self.plot_settings_dict["Histogram/Number of bins"]
+        bins = self.plot_settings_dict["Histogram/X Axis bins"]
+        #Get the data for the line:
+        if style != "2D-HIST":
+            x_data, y_data = self.lines[line_selected].getData()
+            raw_data = self.data[line_selected]
+        else:
+            raw_data = self.data[line_selected]
+
+        
 
         #Remove the line:
         self.plot.removeItem(self.lines[line_selected])
@@ -1099,32 +1132,39 @@ class GUIv2():
         pen = pg.mkPen(pen_data)
         brush_data = list(self.plot_settings_dict["Line/Brush Color"].getRgb())
         brush = pg.mkBrush(brush_data)
+        name = self.plot_settings_dict["Line/Name"]
 
         #Plot the line again:
+        if style == "2D-HIST":
+            self.plot_2dhist(raw_data,type_)
+            self.clean_up()
+            return
+
         if style == "HIST":
-            bin_range = (0,bins)
+            bin_range = None
             if type_ in ranged_hist:
                 bin_range = self.get_bin_range(type_)
 
             hist = np.histogram(raw_data, bins=bins, range=bin_range)
             x = hist[1]
             y = hist[0]
-            line = self.plot.plot(x, y, stepMode="center", fillLevel=self.plot_settings_dict["Histogram/Fill Level"], brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
+            line = self.plot.plot(x, y, stepMode="center", fillLevel=self.plot_settings_dict["Histogram/Fill Level"], brush=brush, pen=pen, name=name)
             
-            self.graph_info[line.name()] = {"style":"HIST","fill":self.plot_settings_dict["Histogram/Fill Level"],"type":type_}
+            self.graph_info[name] = {"style":"HIST","fill":self.plot_settings_dict["Histogram/Fill Level"],"type":type_}
 
-        else:
+        if style != "HIST" and style != "2D-HIST":
             line = self.plot.plot(x_data, y_data, pen=pen, name=self.plot_settings_dict["Line/Name"])
 
-            self.graph_info[line.name()] = {"style":"GRAPH","fill":None,"type":type_}
+            self.graph_info[name] = {"style":"GRAPH","fill":None,"type":type_}
 
-        self.lines[line.name()] = line
-        self.pens[line.name()] = pen_data
-        self.brushes[line.name()] = brush_data
+        self.lines[name] = line
+        self.pens[name] = pen_data
+        self.brushes[name] = brush_data
 
-        self.line_selector.add_item(line.name())
-        index = self.line_selector.get_index(line.name())
+        self.line_selector.add_item(name)
+        index = self.line_selector.get_index(name)
         self.line_selector.set_index(index)
+        self.clean_up()
 
     def delete(self, *a):
         line_selected = self.line_selector.get_text()
@@ -1134,9 +1174,16 @@ class GUIv2():
         self.pens.pop(line_selected)
         self.brushes.pop(line_selected)
         self.graph_info.pop(line_selected)
+        self.data.pop(line_selected)
         plotted_items_names = [item.name() for item in self.plot.listDataItems()]
         self.line_selector.clear()
         [self.line_selector.add_item(item) for item in plotted_items_names]
+
+    def save_snapshot(self, *a):
+        exporter = export.ImageExporter(self.plot)
+        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        path_to_save = os.path.join(self.complete_path, "SCREENSHOTS", f"{self.plot_settings_dict['General Settings/Title']}_{current_date}.png")
+        exporter.export(path_to_save)
 
     def clear(self, *a):
         self.plot.clear()
@@ -1205,17 +1252,42 @@ class GUIv2():
         brush_data = None
         fill_level = None
         type_ = "2D-HIST"
+        name = self.plot_settings_dict["Line/Name"]
         
         transform = QtGui.QTransform()
         transform.scale(1,1)
 
         if button == "PSDvsE":
-            transform.scale(1, 1/self.plot_settings_dict["Histogram/Number of bins - Axis #2"])
-        
+            transform.scale(1, 1/self.plot_settings_dict["Histogram/Y Axis bins"])
+        if button == "TOFvsE":
+            scale_factor = (self.plot_settings_dict["Histogram/Maximum bin"]-self.plot_settings_dict["Histogram/Minimum bin"])/self.plot_settings_dict["Histogram/Y Axis bins"]
+            transform.scale(1, scale_factor)
+            transform.translate(0,self.plot_settings_dict["Histogram/Minimum bin"]*scale_factor)
+
         image = pg.ImageItem(image=data)
-        image.setTransform(tr)
-        image.setColormap(self.colormap)
-        self.plot.addItem(image)
+        image.setTransform(transform)
+        image.setColorMap(self.colormap)
+    
+        if "No lines for now." in self.line_selector.get_all_items():
+            opacity = 1
+            image.setOpts(opacity=opacity)
+
+            self.plot.addItem(image)
+
+            self.lines.pop("No lines for now.")
+
+        elif self.line_selector.get_text() != name:
+            opacity = 0.25
+            image.setOpts(opacity=opacity)
+
+            self.plot.addItem(image)
+
+        self.lines[name] = image
+        self.pens[name] = pen_data
+        self.brushes[name] = brush_data
+        self.graph_info[name] = {"style":type_,"fill":fill_level,"type":button}
+        self.data[name] = data
+            
         
     def enable_buttons(self, buttons_list):
         for button in buttons_list:
@@ -1235,7 +1307,7 @@ class GUIv2():
         self.disable_buttons(self.start_buttons_list, buttons_states)
         self.disable_buttons(self.stop_buttons_list, buttons_states)
 
-    def start_TOF(self, *a):
+    def start_TOF(self, button, *a):
         two_files_pass = True if self.states.count(True) >= 2 else False
         start_btn = self.what_btn_is_checked(self.start_buttons_list)
         stop_btn = self.what_btn_is_checked(self.stop_buttons_list)
@@ -1249,9 +1321,22 @@ class GUIv2():
         if self.root_dict["ROOT Types/Type chosen"] == "FILTERED" and two_files_pass:
             self.root_dict.disable()
 
-            data = root_reader(start_file, self.tree).get_tof_hist(stop_file, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"])
+            if button == "TOF":
+                data = root_reader(start_file, self.tree).get_tof_hist(stop_file, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"])
+                self.plot_data(data, "HIST", button)
+                self.tof_btn.set_checked(False)
+
+            if button == "EvsE":
+                data = root_reader(start_file, self.tree).get_evse_hist(stop_file, self.plot_settings_dict["Histogram/X Axis bins"],self.plot_settings_dict["Histogram/Y Axis bins"])
+                self.plot_2dhist(data[2], button)
+                self.evse_btn.set_checked(False)
+
+            if button == "TOFvsE":
+                data = root_reader(start_file, self.tree).get_tofvse_hist(stop_file, self.plot_settings_dict["Histogram/Minimum bin"],self.plot_settings_dict["Histogram/Maximum bin"],self.plot_settings_dict["Histogram/X Axis bins"],self.plot_settings_dict["Histogram/Y Axis bins"])
+                self.plot_2dhist(data[2], button)
+                self.tofvse_btn.set_checked(False)
             
-            self.plot_data(data, "HIST", "TOF")
+            self.clean_up()
 
         if self.root_dict["ROOT Types/Type chosen"] == "RAW" and two_files_pass and (self.rerun_tof or self.cpp_tof_btn.is_checked()):
             self.csv_name = read_root.generate_csv_name(start_file, start_btn, stop_btn, time_window)
@@ -1270,10 +1355,19 @@ class GUIv2():
             self.tof_thread.finished.connect(self.tof_thread.deleteLater)
             self.merger.finished.connect(self.merger.deleteLater)
             
-            self.merger.finished.connect(lambda: self.plot_data(read_root.get_cpp_tof_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/Number of bins"]), "HIST", "TOF"))
+            if button == "TOF":
+                self.merger.finished.connect(lambda: self.plot_data(read_root.get_cpp_tof_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"]), "HIST", "TOF"))
+                self.merger.finished.connect(lambda: self.tof_btn.set_checked(False))
+            
+            if button == "EvsE":
+                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_evse_hist(self.csv_name, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"])[2], button))
+                self.merger.finished.connect(lambda: self.evse_btn.set_checked(False))
+            
+            if button == "TOFvsE":
+                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_tofvse_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"])[2], button))
+                self.merger.finished.connect(lambda: self.tofvse_btn.set_checked(False))
             
             self.merger.finished.connect(self.clean_up)
-            self.merger.finished.connect(lambda: self.tof_btn.set_checked(False))
             
             self.tof_thread.start()
             self.rerun_tof = False
@@ -1291,7 +1385,7 @@ class GUIv2():
         self.toggle_others_out(None, self.start_buttons_list)
         self.toggle_others_out(None, self.stop_buttons_list)
 
-        plotted_items_names = [item.name() for item in self.plot.listDataItems()]
+        plotted_items_names = self.lines.keys()
         self.line_selector.block_signals()
         self.line_selector.clear()
         [self.line_selector.add_item(item) for item in plotted_items_names]
@@ -1308,7 +1402,7 @@ class GUIv2():
         if self.energy_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Energy Histogram - CH{btn_checked}"
             
-            data = root_reader(path_to_use, self.tree).get_energy_hist(bins=self.plot_settings_dict["Histogram/Number of bins"])
+            data = root_reader(path_to_use, self.tree).get_energy_hist(bins=self.plot_settings_dict["Histogram/X Axis bins"])
 
             self.plot_data(data, "HIST","ENERGY")
             self.energy_btn.set_checked(False)
@@ -1317,7 +1411,7 @@ class GUIv2():
         if self.psd_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD Histogram - CH{btn_checked}"
 
-            data = root_reader(path_to_use, self.tree).get_psd_hist(bins=self.plot_settings_dict["Histogram/Number of bins"])
+            data = root_reader(path_to_use, self.tree).get_psd_hist(bins=self.plot_settings_dict["Histogram/X Axis bins"])
             
             self.plot_data(data, "HIST","PSD")
             self.psd_btn.set_checked(False)
@@ -1326,7 +1420,7 @@ class GUIv2():
         if self.time_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Time Histogram - CH{btn_checked}"
 
-            data = root_reader(path_to_use, self.tree).get_time_hist(self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], bins=self.plot_settings_dict["Histogram/Number of bins"])
+            data = root_reader(path_to_use, self.tree).get_time_hist(self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], bins=self.plot_settings_dict["Histogram/X Axis bins"])
 
             self.plot_data(data, "HIST","TIME")
             self.time_btn.set_checked(False)
@@ -1334,11 +1428,24 @@ class GUIv2():
 
         if self.tof_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"TOF Histogram"
-            self.start_TOF()
+            self.start_TOF("TOF")
 
         if self.psdvse_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD vs Energy Histogram - CH{btn_checked}"
+            
+            data = root_reader(path_to_use, self.tree).get_psdvse_hist(self.plot_settings_dict["Histogram/X Axis bins"],self.plot_settings_dict["Histogram/Y Axis bins"])
+
+            self.plot_2dhist(data[2], "PSDvsE")
+            self.psdvse_btn.set_checked(False)
             self.clean_up()
+
+        if self.evse_btn.is_checked():
+            self.plot_settings_dict["Line/Name"] = f"E vs E Histogram"
+            self.start_TOF("EvsE")
+
+        if self.tofvse_btn.is_checked():
+            self.plot_settings_dict["Line/Name"] = f"TOF vs E Histogram"
+            self.start_TOF("TOFvsE")
         
         if self.mcs_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"MCS Graph - CH{btn_checked}"

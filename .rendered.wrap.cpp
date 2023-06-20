@@ -1,5 +1,7 @@
 #include "funcs.hpp"
-#include "C:\Users\chloe\AppData\Local\Programs\Python\Python311\Lib\site-packages\pybind11\include\pybind11\pybind11.h"
+//Start of config
+#include "C:/Users/chloe/AppData/Local/Programs/Python/Python311/Lib/site-packages/pybind11/include/pybind11/pybind11.h"
+//End of config
 
 namespace py = pybind11;
 
