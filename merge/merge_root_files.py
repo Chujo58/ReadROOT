@@ -28,10 +28,22 @@ class ConsolidatedData:
     energy1: U16
 
 class Merger(QtCore.QObject):
-    """
-    
+    """Merger Class.
+    The start file is considered #1 and stop file, #0.
+
+    Parameters
+    ----------
+    file_ch0 : Path
+        Root file containing the stop events
+    file_ch1 : Path
+        Root file containing the start events
+    window : U64, optional
+        Maximum time for the events to coincide, by default 0
+    tree : str, optional
+        TTree key for the root files, by default "Data_R"
     """
     cuts_enabled = False
+    unfilter_data = False
     finished = QtCore.pyqtSignal(list)
 
     def __init__(self, file_ch0: Path, file_ch1: Path, window: U64 = 0, tree: str = "Data_R") -> None:
@@ -50,8 +62,12 @@ class Merger(QtCore.QObject):
         root_file0 = reader(self.file_ch0__, self.tree).open(raw=True)
         root_file1 = reader(self.file_ch1__, self.tree).open(raw=True)
 
-        unfiltered_root_file0 = read_root.get_unfiltered(root_file0)
-        unfiltered_root_file1 = read_root.get_unfiltered(root_file1)
+        if self.unfilter_data:
+            unfiltered_root_file0 = read_root.get_unfiltered(root_file0)
+            unfiltered_root_file1 = read_root.get_unfiltered(root_file1)
+        else:
+            unfiltered_root_file0 = root_file0
+            unfiltered_root_file1 = root_file1
 
         if self.cuts_enabled:
             filtered_root_file0 = unfiltered_root_file0.iloc(read_root.define_cut(*self.cuts[0],unfiltered_root_file0))
@@ -100,7 +116,7 @@ class Merger(QtCore.QObject):
                 
         # print("result len:", len(result))
         self.finished.emit(result)
-        # return result
+        return result
 
 class Converter:
     def __init__(self, data_set: list[ConsolidatedData]):

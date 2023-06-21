@@ -5,6 +5,7 @@ import uproot as _ur
 import pandas
 import tkinter.filedialog as _fd
 from scipy.optimize import curve_fit
+import pint
 
 import os as _os
 
@@ -62,7 +63,7 @@ def get_unfiltered(data: pandas.DataFrame) -> pandas.DataFrame:
     return pandas.DataFrame(temp_dict)    
 
 
-def generate_csv_name(file_path, start: int, stop: int, window: int) -> str:
+def generate_csv_name(file_path, start: int, stop: int, window: pint.Quantity) -> str:
     """Generates the csv file path where the C++ TOF will save its data.
 
     Parameters
@@ -71,7 +72,7 @@ def generate_csv_name(file_path, start: int, stop: int, window: int) -> str:
         Start channel number
     stop : int
         Stop channel number
-    window : int
+    window : pint.Quantity
         Time window for the TOF
 
     Returns
@@ -87,7 +88,7 @@ def generate_csv_name(file_path, start: int, stop: int, window: int) -> str:
     where_to_save = _os.path.join(*list_output[0:-3])
     run_folder = list_output[-3]
     tree_folder = list_output[-2]
-    csv_name = f"{run_folder}_{tree_folder}_CH{start}-CH{stop}_{window}.csv"
+    csv_name = f"{run_folder}_{tree_folder}_CH{start}-CH{stop}_{window:.2e~P}.csv"
 
     directory = _os.path.join(where_to_save, run_folder, "TOF Data")
     if not _os.path.exists(directory):

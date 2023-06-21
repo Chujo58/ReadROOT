@@ -33,6 +33,7 @@ bcolors = QtClasses.bcolors
 # Import the Merger (Fast TOF calculations):
 from . import merge
 Merger = merge.Merger
+Merger.unfilter_data = True
 Converter = merge.Converter
 #----------------------------------------------------------------------------
 # General libraries imports
@@ -214,7 +215,7 @@ def removeItem(combo_box: g.ComboBox, name: str):
 class GUIv2():
     def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True):
         self.ratio = int(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
-        self.dark_theme_on = dd.isDark()
+        self.dark_theme_on = not dd.isDark()
         self.colormap = pg.colormap.getFromMatplotlib("black_turbo") if self.dark_theme_on else pg.colormap.getFromMatplotlib("white_turbo")
         self.margins = int(10/3*self.ratio)
         width, height = self.get_screen_resolution()
@@ -280,8 +281,26 @@ class GUIv2():
         """
 
         #Qt Style sheets for changing the ComboBox colors
-        self.dark_combo = "background-color: rgb(32, 81, 96); selection-background-color: rgb(24, 132, 165)"
-        self.light_combo = "background-color: rgb(61, 145, 169); selection-background-color: rgb(111, 205, 231)"
+        self.dark_combo = """
+            QComboBox {
+                background-color: rgb(32, 81, 96); 
+                selection-background-color: rgb(24, 132, 165);
+            }
+            QComboBox::disabled {
+                background-color: rgb(72,72,72);
+                selection-background-color: rgb(111,111,111);
+            }
+        """
+        self.light_combo = """
+            QComboBox {
+                background-color: rgb(61, 145, 169);
+                selection-background-color: rgb(111, 205, 231);
+            }
+            QComboBox::disabled {
+                background-color: rgb(121,121,121);
+                selection-background-color: rgb(158,158,158);
+            }
+        """
 
         #Qt Style sheets for sliders:
         self.QSS_dark = """
@@ -700,6 +719,14 @@ class GUIv2():
         collapse_grid_layout.new_autorow()
 
         #MAKE SOMETHING FOR THE FILE SELECTION!
+        temp_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
+        self.selection = SelectionBox()
+        self.selection_button = self.make_channel_btn(self.selection.grid, "Select", 30, lambda x: None)
+        self.selection.add_button(self.selection_button)
+        temp_grid.place_object(self.selection.grid)
+        self.selection.set_height(30*self.ratio)
+        self.selection.set_width(240*self.ratio)
+        self.selection.setStyleSheet(self.dark_combo) if self.dark_theme_on else self.selection.setStyleSheet(self.light_combo)
         collapse_grid_layout.new_autorow()
 
         label_start = collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: ", 125*self.ratio))
@@ -770,9 +797,14 @@ class GUIv2():
 
         parent.addWidget(collapse_grid_layout._widget)
 
-    def choose_csv_to_plot(self, parent):
-        grid = g.GridLayout(False)
-        search_combo = grid.place_object(superqt.QSearchableComboBox())
+    def reload_csv_files(self):
+        self.selection.clear()
+        if os.path.isdir(os.path.join(self.complete_path,"TOF Data")):
+            items_to_add = list(os.listdir(os.path.join(self.complete_path,"TOF Data")))
+            for item in items_to_add:
+                split_item = item.split("_")[1:]
+                to_add = "_".join(split_item)
+                self.selection.add_items([to_add])
         
 
     def make_comp_btn(self, parent, tip_text, url_image, **kwargs):
@@ -853,6 +885,7 @@ class GUIv2():
             if file.endswith(".info"):
                 self.info_file = file
 
+        self.reload_csv_files()
         self.load_info_xml()
         
     def load_info_xml(self):
@@ -867,6 +900,7 @@ class GUIv2():
             self.run_dict[key] = run_information[index]
 
         self.plot_settings_dict["General Settings/Title"] = run_information[0]
+        self.run_id = run_information[0]
 
         self.xml_parser = XMLParser(xml_file_path)
         board_properties = self.xml_parser.get_board_properties()
@@ -1001,7 +1035,10 @@ class GUIv2():
         if self.plot_settings_dict["General Settings/Legend"]:
             self.legend = self.plot.addLegend()
         else:
-            self.plot.removeItem(self.legend)
+            try:
+                self.plot.removeItem(self.legend)
+            except:
+                print("Could not remove an non-existing legend!")
     
     def change_grid(self, *a):
         self.plot.showGrid(x=self.plot_settings_dict["Grid/X Axis"], y=self.plot_settings_dict["Grid/Y Axis"])
@@ -1041,6 +1078,7 @@ class GUIv2():
     def show_roi(self, *a):
         self.plot.addItem(self.start_roi) if self.roi_btn.is_checked() else self.plot.removeItem(self.start_roi)
         self.plot.addItem(self.stop_roi) if self.roi_btn.is_checked() else self.plot.removeItem(self.stop_roi)
+        Merger.cuts_enabled = self.roi_btn.is_checked()
 
     def update_roi(self, *a):
         self.start_roi.setRegion(self.start_range_hslider.value())
@@ -1268,7 +1306,7 @@ class GUIv2():
         image.setTransform(transform)
         image.setColorMap(self.colormap)
     
-        if "No lines for now." in self.line_selector.get_all_items():
+        if "No lines for now." in self.line_selector.get_all_items() or "" in self.line_selector.get_all_items():
             opacity = 1
             image.setOpts(opacity=opacity)
 
@@ -1309,13 +1347,15 @@ class GUIv2():
 
     def start_TOF(self, button, *a):
         two_files_pass = True if self.states.count(True) >= 2 else False
-        start_btn = self.what_btn_is_checked(self.start_buttons_list)
-        stop_btn = self.what_btn_is_checked(self.stop_buttons_list)
-        
-        time_window = int(self.time_range.value().to("picosecond").magnitude)
+        if not self.selection_button.is_checked():
+            start_btn = self.what_btn_is_checked(self.start_buttons_list)
+            stop_btn = self.what_btn_is_checked(self.stop_buttons_list)
+            
+            time_window_magnitude = int(self.time_range.value().to("picosecond").magnitude)
+            time_window_quantity = self.time_range.value()
 
-        start_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(start_btn)))
-        stop_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(stop_btn)))
+            start_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(start_btn)))
+            stop_file = os.path.join(self.complete_path,self.root_dict["ROOT Types/Type chosen"],self.buttons_files.get(str(stop_btn)))
 
         
         if self.root_dict["ROOT Types/Type chosen"] == "FILTERED" and two_files_pass:
@@ -1338,14 +1378,18 @@ class GUIv2():
             
             self.clean_up()
 
-        if self.root_dict["ROOT Types/Type chosen"] == "RAW" and two_files_pass and (self.rerun_tof or self.cpp_tof_btn.is_checked()):
-            self.csv_name = read_root.generate_csv_name(start_file, start_btn, stop_btn, time_window)
+        if self.root_dict["ROOT Types/Type chosen"] == "RAW" and two_files_pass and (self.cpp_tof_btn.is_checked()):
+            self.csv_name = read_root.generate_csv_name(start_file, start_btn, stop_btn, time_window_quantity)
             
             self.root_dict.disable()
             self.cpp_tof_btn.disable()
+            self.roi_btn.disable()
+            self.selection.disable()
 
             self.tof_thread = QtCore.QThread()
-            self.merger = Merger(start_file, stop_file, window=time_window)
+            self.merger = Merger(stop_file, start_file, window=time_window_magnitude)
+            self.merger.select_cuts(*self.start_range_hslider.value(),1)
+            self.merger.select_cuts(*self.stop_range_hslider.value(),0)
 
             self.merger.moveToThread(self.tof_thread)
             self.tof_thread.started.connect(self.merger.merge)
@@ -1368,14 +1412,41 @@ class GUIv2():
                 self.merger.finished.connect(lambda: self.tofvse_btn.set_checked(False))
             
             self.merger.finished.connect(self.clean_up)
+            self.merger.finished.connect(self.reload_csv_files)
             
             self.tof_thread.start()
             self.rerun_tof = False
+
+        if two_files_pass and self.selection_button.is_checked():
+            csv_to_use = os.path.join(self.complete_path, "TOF Data",f"{self.run_id}_{self.selection.get_text()}")
+
+            self.root_dict.disable()
+            self.cpp_tof_btn.disable()
+            self.roi_btn.disable()
+            self.selection.disable()
+
+            if button == "TOF":
+                self.plot_data(read_root.get_cpp_tof_hist(csv_to_use, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"]), "HIST", "TOF")
+                self.tof_btn.set_checked(False)
+
+            if button == "EvsE":
+                self.plot_2dhist(read_root.get_cpp_evse_hist(csv_to_use, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"])[2], button)
+                self.evse_btn.set_checked(False)
+
+            if button == "TOFvsE":
+                self.plot_2dhist(read_root.get_cpp_tofvse_hist(csv_to_use, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"])[2], button)
+                self.tofvse_btn.set_checked(False)
+
+            self.clean_up()
+            self.selection_button.set_checked(False)
+            
 
 
     def clean_up(self, *a):
         self.root_dict.enable()
         self.cpp_tof_btn.enable()
+        self.roi_btn.enable()
+        self.selection.enable()
 
         # Enables all the buttons
         self.enable_all_buttons()
@@ -1401,6 +1472,8 @@ class GUIv2():
 
         if self.energy_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Energy Histogram - CH{btn_checked}"
+            self.plot_settings_dict["Axis/X Label"] = "Energy bins"
+            self.plot_settings_dict["Axis/Y Label"] = "Counts"
             
             data = root_reader(path_to_use, self.tree).get_energy_hist(bins=self.plot_settings_dict["Histogram/X Axis bins"])
 
@@ -1410,6 +1483,8 @@ class GUIv2():
 
         if self.psd_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD Histogram - CH{btn_checked}"
+            self.plot_settings_dict["Axis/X Label"] = "PSD bins"
+            self.plot_settings_dict["Axis/Y Label"] = "Counts"
 
             data = root_reader(path_to_use, self.tree).get_psd_hist(bins=self.plot_settings_dict["Histogram/X Axis bins"])
             
@@ -1419,6 +1494,8 @@ class GUIv2():
 
         if self.time_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"Time Histogram - CH{btn_checked}"
+            self.plot_settings_dict["Axis/X Label"] = "Time bins"
+            self.plot_settings_dict["Axis/Y Label"] = "Counts"
 
             data = root_reader(path_to_use, self.tree).get_time_hist(self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], bins=self.plot_settings_dict["Histogram/X Axis bins"])
 
@@ -1428,10 +1505,15 @@ class GUIv2():
 
         if self.tof_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"TOF Histogram"
+            self.plot_settings_dict["Axis/X Label"] = "TOF bins"
+            self.plot_settings_dict["Axis/Y Label"] = "Counts"
+
             self.start_TOF("TOF")
 
         if self.psdvse_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"PSD vs Energy Histogram - CH{btn_checked}"
+            self.plot_settings_dict["Axis/X Label"] = "Energy bins"
+            self.plot_settings_dict["Axis/Y Label"] = "PSD bins"            
             
             data = root_reader(path_to_use, self.tree).get_psdvse_hist(self.plot_settings_dict["Histogram/X Axis bins"],self.plot_settings_dict["Histogram/Y Axis bins"])
 
@@ -1441,14 +1523,22 @@ class GUIv2():
 
         if self.evse_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"E vs E Histogram"
+            self.plot_settings_dict["Axis/X Label"] = "Energy (start) bins"            
+            self.plot_settings_dict["Axis/Y Label"] = "Energy (stop) bins"            
+
             self.start_TOF("EvsE")
 
         if self.tofvse_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"TOF vs E Histogram"
+            self.plot_settings_dict["Axis/X Label"] = "Energy (stop) bins"
+            self.plot_settings_dict["Axis/Y Label"] = "TOF bins"
+
             self.start_TOF("TOFvsE")
         
         if self.mcs_btn.is_checked():
             self.plot_settings_dict["Line/Name"] = f"MCS Graph - CH{btn_checked}"
+            self.plot_settings_dict["Axis/X Label"] = "Time"
+            self.plot_settings_dict["Axis/Y Label"] = "Events"
 
             data = root_reader(path_to_use, self.tree).get_mcs_graph()
 
@@ -1456,11 +1546,6 @@ class GUIv2():
             self.mcs_btn.set_checked(False)
             self.clean_up()
 
-        # plotted_items_names = [item.name() for item in self.plot.listDataItems()]
-        # self.line_selector.block_signals()
-        # self.line_selector.clear()
-        # [self.line_selector.add_item(item) for item in plotted_items_names]
-        # self.line_selector.unblock_signals()
 
 
 

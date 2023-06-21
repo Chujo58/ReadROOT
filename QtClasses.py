@@ -105,26 +105,42 @@ class SelectionBox(QtCore.QObject):
     def __init__(self):
         super(QtCore.QObject, self).__init__()
         self.grid = g.GridLayout(False)
-        self._searchable_combo = self.grid.place_object(superqt.QSearchableComboBox())
-        self._save_btn = self.grid.place_object(g.Button(" "))
+        self._searchable_combo = self.grid.place_object(g.ComboBox([]))
+    
+    def add_button(self, button=None):
+        self._save_btn = self.grid.place_object(g.Button(" ")) if button is None else button
         self._save_btn.signal_clicked.connect(self._save_btn_clicked)
 
     def add_items(self, items):
-        self._searchable_combo.addItems(items)
-        self._searchable_combo.adjustSize()
+        for item in items:
+            self._searchable_combo.add_item(item)        
 
     def clear(self):
         self._searchable_combo.clear()
 
     def _save_btn_clicked(self, *a):
-        self.on_save.emit(self._searchable_combo.currentText())
-
-    def change_icon(self, icon):
-        self._save_btn.set_style_unchecked(style=f"image: url(Images/{icon})")
+        self.on_save.emit(self._searchable_combo.get_text())
 
     def set_height(self, value):
-        self._searchable_combo.setFixedHeight(value)
-        self._save_btn.set_height(value).set_width(value)
+        self._searchable_combo.set_height(value)
+        # self._save_btn.set_height(value).set_width(value)
+
+    def set_width(self, value):
+        self._searchable_combo.set_width(value)
+
+    def setStyleSheet(self, style_sheet):
+        self._searchable_combo._widget.setStyleSheet(style_sheet)
+
+    def get_text(self):
+        return self._searchable_combo.get_text()
+
+    def disable(self):
+        self._searchable_combo.disable()
+        self._save_btn.disable()
+
+    def enable(self):
+        self._searchable_combo.enable()
+        self._save_btn.enable()
 
     
 
