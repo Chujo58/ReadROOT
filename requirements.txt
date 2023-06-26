@@ -1,3 +1,13 @@
 uproot
 bytechomp
 numpy
+spinmob
+pandas
+pyqtgraph == 0.13.3
+darkdetect
+pyqt5
+scipy
+matplotlib
+superqt
+bs4
+tkinter
