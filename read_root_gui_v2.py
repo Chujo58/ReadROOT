@@ -28,7 +28,6 @@ from . import QtClasses
 IconLabel = QtClasses.IconLabel
 Seperator = QtClasses.Seperator
 SelectionBox = QtClasses.SelectionBox
-IconLabel.IconSize = IconLabel.new_icon_size(35)
 bcolors = QtClasses.bcolors
 # Import the Merger (Fast TOF calculations):
 from . import merge
@@ -222,6 +221,8 @@ class GUIv2():
         width = int(window_size[0]/1680*width)
         height = int(window_size[1]/1050*height)
 
+        IconLabel.IconSize = IconLabel.new_icon_size(int(35/(self.ratio/3)))
+
         primary, secondary, accent = self.create_colors()
 
         window = g.Window(name, size=[width, height], autosettings_path=name+"_window.txt")
@@ -305,7 +306,7 @@ class GUIv2():
         #Qt Style sheets for sliders:
         self.QSS_dark = """
             QSlider::groove:horizontal{
-                height:20px;
+            """ + f"height:{int(20/(self.ratio/3))}px;" + """
             }
 
             QRangeSlider{
@@ -315,16 +316,16 @@ class GUIv2():
             QSlider::handle{
                 background-color: rgb(61,61,61);
                 border: 2px solid rgb(40,40,40);
-                border-radius: 22px;
+            """ + f"border-radius: {int(22/(self.ratio/3))}px;" + """
             }
 
             QSlider::handle:horizontal:hover{
-                border-radius: 10px;
+            """ + f"border-radius: {int(10/(self.ratio/3))}px;" + """
             }
         """
         self.QSS_light = """
             QSlider::groove:horizontal{
-                height:20px;
+            """ + f"height:{int(20/(self.ratio/3))}px;" + """
             }
 
             QRangeSlider{
@@ -334,11 +335,11 @@ class GUIv2():
             QSlider::handle{
                 background-color: white;
                 border: 2px solid rgb(193,193,193);
-                border-radius: 22px;
+            """ + f"border-radius: {int(22/(self.ratio/3))}px;" + """
             }
 
             QSlider::handle:horizontal:hover{
-                border-radius: 10px;
+            """ + f"border-radius: {int(10/(self.ratio/3))}px;" + """
             }
         """
 
@@ -463,12 +464,14 @@ class GUIv2():
         self.compass_tab.new_autorow()
 
         self.board_dict_1 = self.compass_tab.place_object(g.TreeDictionary(),alignment=0).set_height(100*self.ratio)
+        self.board_dict_1._widget.setHeaderLabels(["Parameters Long","Value"])
         self.board_dict_1.add_parameter("Board Info/Name", value=" ", readonly=True, tip="Name of the digitizer in use.")
         self.board_dict_1.add_parameter("Board Info/ADC bits", value=" ", readonly=True, tip="Number of binary digits used to represent digital data from the digitizer.")
         self.board_dict_1.add_parameter("Board Info/ROC firmware", value=" ", readonly=True)
         self.board_dict_1.add_parameter("Board Info/Link", value=" ", readonly=True)
 
         self.board_dict_2 = self.compass_tab.place_object(g.TreeDictionary(),alignment=0).set_height(100*self.ratio)
+        self.board_dict_2._widget.setHeaderLabels(["Parameters Long","Value"])
         self.board_dict_2.add_parameter(" /ID", value=" ", readonly=True)
         self.board_dict_2.add_parameter(" /Sampling rate", value=None, type="float", readonly=True, suffix="S/s", siPrefix=True)
         self.board_dict_2.add_parameter(" /AMC firware", value=" ", readonly=True)
@@ -552,8 +555,8 @@ class GUIv2():
 
         #Make a collapsible zone
         grid_bot.new_autorow()
-        collapsible = grid_bot.place_object(superqt.QCollapsible("TOF Settings", expandedIcon=QtGui.QIcon("Images/expanded.png"),collapsedIcon=QtGui.QIcon("Images/collapsed.png")))
-        self.make_collapsible_section(collapsible)
+        self.collapsible = grid_bot.place_object(superqt.QCollapsible("TOF Settings", expandedIcon=QtGui.QIcon("Images/expanded.png"),collapsedIcon=QtGui.QIcon("Images/collapsed.png")))
+        self.make_collapsible_section(self.collapsible)
 
 
         #Make the plotting region
@@ -571,16 +574,16 @@ class GUIv2():
         self.time_btn.signal_toggled.connect(self.plot_selection)
 
         self.tof_btn = self.make_comp_btn(self.inner_left, "New TOF (Time of flight) Histogram", "Images/TOFHist.png", column=1, row=4)
-        self.tof_btn.signal_toggled.connect(self.plot_selection)
+        self.tof_btn.signal_toggled.connect(self.tof_selection)
 
         self.psdvse_btn = self.make_comp_btn(self.inner_left, "New PSD vs Energy Histogram", "Images/PSDvsEnergyHist.png", column=1, row=5)
         self.psdvse_btn.signal_toggled.connect(self.plot_selection)
 
         self.evse_btn = self.make_comp_btn(self.inner_left, "New Energy vs Energy Histogram", "Images/EnergyvsEnergyHist.png", column=1, row=6)
-        self.evse_btn.signal_toggled.connect(self.plot_selection)
+        self.evse_btn.signal_toggled.connect(self.tof_selection)
 
         self.tofvse_btn = self.make_comp_btn(self.inner_left," New TOF (Time of flight) vs Energy Histogram", "Images/TOFvsEnergyHist.png", column=1, row=7)
-        self.tofvse_btn.signal_toggled.connect(self.plot_selection)
+        self.tofvse_btn.signal_toggled.connect(self.tof_selection)
 
         self.mcs_btn = self.make_comp_btn(self.inner_left, "New MCS Graph", "Images/MCS Graph.png", column=1, row=8)
         self.mcs_btn.signal_toggled.connect(self.plot_selection)
@@ -1138,6 +1141,7 @@ class GUIv2():
     def save_changes(self, *a):
         line_selected = self.line_selector.get_text()
         ranged_hist = ["PSD","TIME","TOF"]
+        ranged_2dhist = ["TOFvsE","PSDvsE"]
         #Check for a No lines for now:
         if "No lines for now." in self.line_selector.get_all_items():
             index = self.line_selector.get_index("No lines for now.")
@@ -1175,7 +1179,50 @@ class GUIv2():
 
         #Plot the line again:
         if style == "2D-HIST":
-            self.plot_2dhist(raw_data,type_)
+            y_bins = self.plot_settings_dict["Histogram/Y Axis bins"]
+            x_range = None
+            y_range = None
+            if type_ in ranged_2dhist:
+                y_range = self.get_bin_range(type_.split("vs")[0])
+                min_e = min(raw_data[0])
+                max_e = max(raw_data[0])
+                x_range = (min_e, max_e)
+
+            density = np.histogram2d(*raw_data, bins=[bins, y_bins], range=(x_range, y_range))[0]
+
+            transform = QtGui.QTransform()
+            transform.scale(1,1)
+
+            if type_ == "PSDvsE":
+                transform.scale(1, 1/self.plot_settings_dict["Histogram/Y Axis bins"])
+            if type_ == "TOFvsE":
+                scale_factor = (self.plot_settings_dict["Histogram/Maximum bin"]-self.plot_settings_dict["Histogram/Minimum bin"])/self.plot_settings_dict["Histogram/Y Axis bins"]
+                transform.scale(1, scale_factor)
+                transform.translate(0,self.plot_settings_dict["Histogram/Minimum bin"]*scale_factor)
+
+            image = pg.ImageItem(image=density)
+            image.setTransform(transform)
+            image.setColorMap(self.colormap)
+
+            if "No lines for now." in self.line_selector.get_all_items() or len(self.line_selector.get_all_items()) == 0:
+                opacity = 1
+                image.setOpts(opacity=opacity)
+
+                self.plot.addItem(image)
+
+                self.lines.pop("No lines for now.") if "No lines for now." in self.line_selector.get_all_items() else None
+
+            elif self.line_selector.get_text() != name:
+                opacity = 0.25
+                image.setOpts(opacity=opacity)
+
+                self.plot.addItem(image)
+
+            self.lines[name] = image
+            self.pens[name] = pen_data
+            self.brushes[name] = brush_data
+            self.graph_info[name] = {"style":style,"fill":None,"type":type_}
+            self.data[name] = raw_data
             self.clean_up()
             return
 
@@ -1257,15 +1304,9 @@ class GUIv2():
                 fill_level = None
                 step = None
             line = self.plot.plot(data[0], data[1], stepMode=step, fillLevel=fill_level, brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
-
             
             #Add pen and brush to the selected dictionaries
             self.lines.pop("No lines for now.")
-            self.lines[line.name()] = line
-            self.pens[line.name()] = pen_data
-            self.brushes[line.name()] = brush_data
-            self.graph_info[line.name()] = {"style":type_,"fill":fill_level,"type":button}
-            self.data[line.name()] = root_data
 
         elif self.line_selector.get_text() != self.plot_settings_dict["Line/Name"]:
             temp_pen_data = pen_data.copy()
@@ -1280,11 +1321,11 @@ class GUIv2():
                 step = None
             line = self.plot.plot(data[0], data[1], stepMode=step, fillLevel=fill_level, brush=brush, pen=pen, name=self.plot_settings_dict["Line/Name"])
 
-            self.lines[line.name()] = line
-            self.pens[line.name()] = pen_data
-            self.brushes[line.name()] = brush_data
-            self.graph_info[line.name()] = {"style":type_,"fill":fill_level,"type":button}
-            self.data[line.name()] = root_data
+        self.lines[line.name()] = line
+        self.pens[line.name()] = pen_data
+        self.brushes[line.name()] = brush_data
+        self.graph_info[line.name()] = {"style":type_,"fill":fill_level,"type":button}
+        self.data[line.name()] = root_data
 
     def plot_2dhist(self, data, button: str):
         pen_data = None
@@ -1292,6 +1333,8 @@ class GUIv2():
         fill_level = None
         type_ = "2D-HIST"
         name = self.plot_settings_dict["Line/Name"]
+
+        self.databox["x"], self.databox["y"], density_data, original_data = data
         
         transform = QtGui.QTransform()
         transform.scale(1,1)
@@ -1303,17 +1346,17 @@ class GUIv2():
             transform.scale(1, scale_factor)
             transform.translate(0,self.plot_settings_dict["Histogram/Minimum bin"]*scale_factor)
 
-        image = pg.ImageItem(image=data)
+        image = pg.ImageItem(image=density_data)
         image.setTransform(transform)
         image.setColorMap(self.colormap)
     
-        if "No lines for now." in self.line_selector.get_all_items() or "" in self.line_selector.get_all_items():
+        if "No lines for now." in self.line_selector.get_all_items() or len(self.line_selector.get_all_items()) == 0:
             opacity = 1
             image.setOpts(opacity=opacity)
 
             self.plot.addItem(image)
 
-            self.lines.pop("No lines for now.")
+            self.lines.pop("No lines for now.") if "No lines for now." in self.line_selector.get_all_items() else None
 
         elif self.line_selector.get_text() != name:
             opacity = 0.25
@@ -1325,7 +1368,7 @@ class GUIv2():
         self.pens[name] = pen_data
         self.brushes[name] = brush_data
         self.graph_info[name] = {"style":type_,"fill":fill_level,"type":button}
-        self.data[name] = data
+        self.data[name] = original_data
             
         
     def enable_buttons(self, buttons_list):
@@ -1364,17 +1407,17 @@ class GUIv2():
 
             if button == "TOF":
                 data = root_reader(start_file, self.tree).get_tof_hist(stop_file, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"])
-                self.plot_data(data, "HIST", button)
+                self.plot_data(data, "HIST", button) if data is not None else None
                 self.tof_btn.set_checked(False)
 
             if button == "EvsE":
                 data = root_reader(start_file, self.tree).get_evse_hist(stop_file, self.plot_settings_dict["Histogram/X Axis bins"],self.plot_settings_dict["Histogram/Y Axis bins"])
-                self.plot_2dhist(data[2], button)
+                self.plot_2dhist(data, button) if data is not None else None
                 self.evse_btn.set_checked(False)
 
             if button == "TOFvsE":
                 data = root_reader(start_file, self.tree).get_tofvse_hist(stop_file, self.plot_settings_dict["Histogram/Minimum bin"],self.plot_settings_dict["Histogram/Maximum bin"],self.plot_settings_dict["Histogram/X Axis bins"],self.plot_settings_dict["Histogram/Y Axis bins"])
-                self.plot_2dhist(data[2], button)
+                self.plot_2dhist(data, button) if data is not None else None
                 self.tofvse_btn.set_checked(False)
             
             self.clean_up()
@@ -1405,11 +1448,11 @@ class GUIv2():
                 self.merger.finished.connect(lambda: self.tof_btn.set_checked(False))
             
             if button == "EvsE":
-                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_evse_hist(self.csv_name, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"])[2], button))
+                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_evse_hist(self.csv_name, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"]), button))
                 self.merger.finished.connect(lambda: self.evse_btn.set_checked(False))
             
             if button == "TOFvsE":
-                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_tofvse_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"])[2], button))
+                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_tofvse_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"]), button))
                 self.merger.finished.connect(lambda: self.tofvse_btn.set_checked(False))
             
             self.merger.finished.connect(self.clean_up)
@@ -1431,11 +1474,11 @@ class GUIv2():
                 self.tof_btn.set_checked(False)
 
             if button == "EvsE":
-                self.plot_2dhist(read_root.get_cpp_evse_hist(csv_to_use, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"])[2], button)
+                self.plot_2dhist(read_root.get_cpp_evse_hist(csv_to_use, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"]), button)
                 self.evse_btn.set_checked(False)
 
             if button == "TOFvsE":
-                self.plot_2dhist(read_root.get_cpp_tofvse_hist(csv_to_use, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"])[2], button)
+                self.plot_2dhist(read_root.get_cpp_tofvse_hist(csv_to_use, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"]), button)
                 self.tofvse_btn.set_checked(False)
 
             self.clean_up()
@@ -1547,7 +1590,13 @@ class GUIv2():
             self.mcs_btn.set_checked(False)
             self.clean_up()
 
+    def tof_selection(self, *a):
+        if a[0]:
+            self.collapsible.expand()
+        else:
+            self.collapsible.collapse()
 
+        self.plot_selection(*a)
 
 
     def plot_selection(self, *a):

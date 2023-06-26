@@ -118,7 +118,7 @@ def get_cpp_evse_hist(file_path: str, xbins: int, ybins: int) -> tuple[numpy.arr
     df = pandas.read_csv(file_path, compression="bz2")
 
     density, xedge, yedge = numpy.histogram2d(df["Start Energy"], df["Stop Energy"], (xbins, ybins))
-    return (xedge, yedge, density)
+    return (xedge, yedge, density, (df["Start Energy"], df["Stop Energy"]))
 
 def get_cpp_tofvse_hist(file_path: str, min_: int, max_: int, default_energy_bins=4096, default_tof_bins=8192) -> tuple[numpy.array, numpy.array, numpy.ndarray]:
     """Generates the TOF vs Energy 2D histogram
@@ -147,7 +147,7 @@ def get_cpp_tofvse_hist(file_path: str, min_: int, max_: int, default_energy_bin
     
     tof_data = get_cpp_tof_hist(file_path, min_, max_, default_tof_bins)[2] #Grab only the time differences
     density, xedge, yedge = numpy.histogram2d(df["Stop Energy"], tof_data, [default_energy_bins, default_tof_bins], ((min_e,max_e),(min_,max_)))
-    return (xedge, yedge, density)
+    return (xedge, yedge, density, (df["Stop Energy"], tof_data))
 
 
 class _root_reader():
@@ -608,7 +608,10 @@ class root_reader_v2():
         data_stop = root_reader_v2(stop_file, self.tree).open()
         # print(len(data_stop))
         
-        delta_time = (numpy.array(data_stop["Timestamp"]) - numpy.array(data_start["Timestamp"]))*1e-3
+        try:
+            delta_time = (numpy.array(data_stop["Timestamp"]) - numpy.array(data_start["Timestamp"]))*1e-3
+        except:
+            return
 
         hist = numpy.histogram(delta_time, default_bins, range=(min_, max_))
         y, x = hist
@@ -637,8 +640,12 @@ class root_reader_v2():
         data_start = self.open()
         data_stop = root_reader_v2(stop_file, self.tree).open()
         
-        density, xedge, yedge = numpy.histogram2d(data_start["Energy"], data_stop["Energy"], (xbins, ybins))
-        return (xedge, yedge, density)
+        try:
+            density, xedge, yedge = numpy.histogram2d(data_start["Energy"], data_stop["Energy"], (xbins, ybins))
+        except:
+            return
+
+        return (xedge, yedge, density, (data_start["Energy"], data_stop["Energy"]))
 
     def get_tofvse_hist(self, stop_file: str, min_: int, max_: int, default_energy_bins=4096, default_tof_bins=8192) -> tuple[numpy.array, numpy.array, numpy.array]:
         """Generates the TOF vs Energy 2D histogram's data from a file with the TTree key `Data_F`
@@ -668,8 +675,11 @@ class root_reader_v2():
         stop_data = root_reader_v2(stop_file, self.tree).open()
         min_e = min(stop_data["Energy"])
         max_e = max(stop_data["Energy"])
-        density, xedge, yedge = numpy.histogram2d(stop_data["Energy"], tof_data, [default_energy_bins, default_tof_bins], ((min_e,max_e),(min_,max_)))
-        return (xedge, yedge, density)
+        try:
+            density, xedge, yedge = numpy.histogram2d(stop_data["Energy"], tof_data, [default_energy_bins, default_tof_bins], ((min_e,max_e),(min_,max_)))
+        except:
+            return
+        return (xedge, yedge, density, (stop_data["Energy"], tof_data))
 
     def get_psdvse_hist(self, default_energy_bins=4096, default_psd_bins=4096) -> tuple[numpy.array, numpy.array, numpy.array]:
         """Generates the PSD vs Energy 2D histogram's data
@@ -690,7 +700,7 @@ class root_reader_v2():
         min_e = min(data["Energy"])
         max_e = max(data["Energy"])
         density, xedge, yedge = numpy.histogram2d(data["Energy"], data["PSD"], [default_energy_bins, default_psd_bins], range=((min_e,max_e),(0,1)))
-        return (xedge, yedge, density)
+        return (xedge, yedge, density, (data["Energy"], data["PSD"]))
 
     def get_mcs_graph(self) -> tuple[numpy.array, numpy.array, pandas.Series]:
         """Generates the MCS graph's data
