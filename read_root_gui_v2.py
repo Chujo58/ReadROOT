@@ -855,11 +855,12 @@ class GUIv2():
         return primary_color, secondary_color, accent_color
 
     def make_comp_settings_tab(self, parent_tab, tab_type):
-        parent_tab.place_object(g.Label("Channel :"))
-        channel_selector = parent_tab.place_object(g.ComboBox(items=["BOARD","CH0","CH1","CH2","CH3"])).set_width(1200*self.ratio)
+        grid = parent_tab.place_object(g.GridLayout(False), alignment=0)
+        grid.place_object(g.Label("Channel :"))
+        channel_selector = grid.place_object(g.ComboBox(items=["BOARD","CH0","CH1","CH2","CH3"])).set_width(1200*self.ratio)
         channel_selector._widget.setStyleSheet(self.dark_combo) if self.dark_theme_on else channel_selector._widget.setStyleSheet(self.light_combo)
-        parent_tab.new_autorow()
-        tree_dict = parent_tab.place_object(g.TreeDictionary(), alignment=0, column_span=2)
+        grid.new_autorow()
+        tree_dict = grid.place_object(g.TreeDictionary(), alignment=0, column_span=2)
         tree_dict._widget.setHeaderLabels(["Parameters are very long so here","Values"])
         tree_dict._widget.setStyleSheet(self.dark_tree) if self.dark_theme_on else tree_dict._widget.setStyleSheet(self.light_tree)
 

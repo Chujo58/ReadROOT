@@ -9,17 +9,11 @@ import pint
 
 import os as _os
 
-# # sys.path.append('AppData/Local/Programs/Python/lib/site-packages/ReadROOT')
-
-# print(_os.getcwd())
-# print(_os.listdir())
-
-import cppimport
-try:
-    lib = cppimport.imp("wrap")
-except:
-    lib = cppimport.imp_from_filepath("wrap.cpp")
-# from scipy import asarray as ar,exp
+# import cppimport
+# try:
+#     lib = cppimport.imp("wrap")
+# except:
+#     lib = cppimport.imp_from_filepath("wrap.cpp")
 
 
 def define_cut(start: int, stop: int, data_set: pandas.DataFrame) -> numpy.array:

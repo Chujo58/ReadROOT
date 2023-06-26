@@ -9,7 +9,7 @@ from . import read_root_gui_v2
 from . import IOClasses
 from . import QtClasses
 
-reader = read_root._root_reader
+# reader = read_root._root_reader
 reader_v2 = read_root.root_reader_v2
 gui = read_root_gui.GUI
 guiv2 = read_root_gui_v2.GUIv2

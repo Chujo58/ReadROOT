@@ -10,4 +10,5 @@ scipy
 matplotlib
 superqt
 bs4
-tkinter
+tk
+pint
