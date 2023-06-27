@@ -221,7 +221,7 @@ class GUIv2():
         width = int(window_size[0]/1680*width)
         height = int(window_size[1]/1050*height)
 
-        IconLabel.IconSize = IconLabel.new_icon_size(int(35/(self.ratio/3)))
+        IconLabel.IconSize = IconLabel.new_icon_size(int(35/3*self.ratio))
 
         primary, secondary, accent = self.create_colors()
 
@@ -306,7 +306,7 @@ class GUIv2():
         #Qt Style sheets for sliders:
         self.QSS_dark = """
             QSlider::groove:horizontal{
-            """ + f"height:{int(20/(self.ratio/3))}px;" + """
+            """ + f"height:{int(20/3*self.ratio)}px;" + """
             }
 
             QRangeSlider{
@@ -316,16 +316,16 @@ class GUIv2():
             QSlider::handle{
                 background-color: rgb(61,61,61);
                 border: 2px solid rgb(40,40,40);
-            """ + f"border-radius: {int(22/(self.ratio/3))}px;" + """
+            """ + f"border-radius: {int(22/3*self.ratio)}px;" + """
             }
 
             QSlider::handle:horizontal:hover{
-            """ + f"border-radius: {int(10/(self.ratio/3))}px;" + """
+            """ + f"border-radius: {int(10/3*self.ratio)}px;" + """
             }
         """
         self.QSS_light = """
             QSlider::groove:horizontal{
-            """ + f"height:{int(20/(self.ratio/3))}px;" + """
+            """ + f"height:{int(20/3*self.ratio)}px;" + """
             }
 
             QRangeSlider{
@@ -335,11 +335,11 @@ class GUIv2():
             QSlider::handle{
                 background-color: white;
                 border: 2px solid rgb(193,193,193);
-            """ + f"border-radius: {int(22/(self.ratio/3))}px;" + """
+            """ + f"border-radius: {int(22/3*self.ratio)}px;" + """
             }
 
             QSlider::handle:horizontal:hover{
-            """ + f"border-radius: {int(10/(self.ratio/3))}px;" + """
+            """ + f"border-radius: {int(10/3*self.ratio)}px;" + """
             }
         """
 
@@ -600,8 +600,6 @@ class GUIv2():
         self.clear_btn.signal_toggled.connect(self.clear)
 
         #Adding the databox and the plot
-        self.databox = inner_right.place_object(g.DataboxSaveLoad(file_type='.txt'), alignment=0)
-        self.databox.enable_save()
         inner_right.new_autorow()
         plot_region = inner_right.place_object(pg.PlotWidget(), alignment=0)
         plot_region.setBackground("black") if self.dark_theme_on else plot_region.setBackground("white")
@@ -647,7 +645,6 @@ class GUIv2():
         self.plot_settings_dict.connect_signal_changed("Axis/Max Y", self.change_min_max)
 
         self.plot_settings_dict.add_parameter("Histogram/X Axis bins", value=100, tip="X-axis bins")
-        self.plot_settings_dict.connect_signal_changed("Histogram/X Axis bins", self.change_bin_number)
         self.plot_settings_dict.add_parameter("Histogram/Y Axis bins", value=1024, tip="Y-axis bins (for 2D histograms only)")
         self.plot_settings_dict.add_parameter("Histogram/Fill Level", value=0)
         self.plot_settings_dict.add_parameter("Histogram/Minimum bin", value=0, tip="For TOF and Time histograms")
@@ -658,7 +655,8 @@ class GUIv2():
 
     def make_collapsible_section(self, parent):
         collapse_grid_layout = g.GridLayout(False)
-        self.old_stop_range = 500
+        self.old_range = 500
+        self.old_min = 0
 
         self.previous_start_btn = None
         self.previous_stop_btn = None
@@ -723,7 +721,7 @@ class GUIv2():
 
         #MAKE SOMETHING FOR THE FILE SELECTION!
         temp_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
-        self.selection = SelectionBox()
+        self.selection = SelectionBox("No CSV files for now.")
         self.selection_button = self.make_channel_btn(self.selection.grid, "Select", 30, lambda x: None)
         self.selection.add_button(self.selection_button)
         temp_grid.place_object(self.selection.grid)
@@ -735,12 +733,12 @@ class GUIv2():
         label_start = collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: ", 125*self.ratio))
         collapse_grid_layout.new_autorow()
 
-        self.start_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
+        self.start_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledDoubleRangeSlider(Horizontal))
         self.start_range_hslider.setMinimumWidth(275*self.ratio)
         self.start_range_hslider.setMinimumHeight(40*self.ratio)
         self.start_range_hslider.setStyleSheet(self.QSS_dark) if self.dark_theme_on else self.start_range_hslider.setStyleSheet(self.QSS_light)
         self.start_range_hslider.setValue((0,80))
-        self.start_range_hslider.setRange(0,self.old_stop_range)
+        self.start_range_hslider.setRange(self.old_min,self.old_range)
         self.start_range_hslider.show()
         self.start_range_hslider.valueChanged.connect(self.update_roi)
 
@@ -749,12 +747,12 @@ class GUIv2():
         label_stop = collapse_grid_layout.place_object(IconLabel("Images/stop.png","Stop channel range: ", 125*self.ratio))
         collapse_grid_layout.new_autorow()
 
-        self.stop_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledRangeSlider(Horizontal))
+        self.stop_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledDoubleRangeSlider(Horizontal))
         self.stop_range_hslider.setMinimumWidth(275*self.ratio)
         self.stop_range_hslider.setMinimumHeight(40*self.ratio)
         self.stop_range_hslider.setStyleSheet(self.QSS_dark) if self.dark_theme_on else self.stop_range_hslider.setStyleSheet(self.QSS_light)
         self.stop_range_hslider.setValue((0,80))
-        self.stop_range_hslider.setRange(0,self.old_stop_range)
+        self.stop_range_hslider.setRange(self.old_min,self.old_range)
         self.stop_range_hslider.show()
         self.stop_range_hslider.valueChanged.connect(self.update_roi)
 
@@ -956,14 +954,15 @@ class GUIv2():
             tree_dict[param] = information[xml_key][parameters_xml_aliases[key][param]]
     
     def reload_channels(self, *a):
-        self.load_channel_settings(self.xml_parser, self.input_channel, self.input_dict, "INPUT")
-        self.load_channel_settings(self.xml_parser, self.disc_channel, self.disc_dict, "DISCRIMINATOR")
-        self.load_channel_settings(self.xml_parser, self.qdc_channel, self.qdc_dict, "QDC")
-        self.load_channel_settings(self.xml_parser, self.spectra_channel, self.spectra_dict, "SPECTRA")
-        self.load_channel_settings(self.xml_parser, self.reject_channel, self.reject_dict, "REJECTIONS")
-        self.load_channel_settings(self.xml_parser, self.energy_channel, self.energy_dict, "ENERGY CALIBRATION")
-        self.load_channel_settings(self.xml_parser, self.sync_channel, self.sync_dict, "SYNC")
-        self.load_channel_settings(self.xml_parser, self.misc_channel, self.misc_dict, "MISC")
+        if hasattr(self, "xml_parser"):
+            self.load_channel_settings(self.xml_parser, self.input_channel, self.input_dict, "INPUT")
+            self.load_channel_settings(self.xml_parser, self.disc_channel, self.disc_dict, "DISCRIMINATOR")
+            self.load_channel_settings(self.xml_parser, self.qdc_channel, self.qdc_dict, "QDC")
+            self.load_channel_settings(self.xml_parser, self.spectra_channel, self.spectra_dict, "SPECTRA")
+            self.load_channel_settings(self.xml_parser, self.reject_channel, self.reject_dict, "REJECTIONS")
+            self.load_channel_settings(self.xml_parser, self.energy_channel, self.energy_dict, "ENERGY CALIBRATION")
+            self.load_channel_settings(self.xml_parser, self.sync_channel, self.sync_dict, "SYNC")
+            self.load_channel_settings(self.xml_parser, self.misc_channel, self.misc_dict, "MISC")
 
     def changing_tree(self, *a):
         folder_to_look_in = self.complete_path + "\\" + self.root_dict["ROOT Types/Type chosen"]
@@ -1029,8 +1028,6 @@ class GUIv2():
         self.change_grid()
         self.change_labels()
         self.change_log()
-        self.change_min_max()
-        self.change_bin_number()
                 
     def change_title(self, *a):
         self.plot.setLabels(title=self.plot_settings_dict["General Settings/Title"])
@@ -1058,23 +1055,30 @@ class GUIv2():
         self.plot.setXRange(self.plot_settings_dict["Axis/Min X"], self.plot_settings_dict["Axis/Max X"])
         self.plot.setYRange(self.plot_settings_dict["Axis/Min Y"], self.plot_settings_dict["Axis/Max Y"])
 
-    def change_bin_number(self, *a):
+    def change_bin_number(self, new_min, new_max, *a):
         #Get the old values
-        old_start_values = np.array(self.start_range_hslider.value())
-        old_stop_values = np.array(self.stop_range_hslider.value())
-        new_stop_range = self.plot_settings_dict["Histogram/X Axis bins"]
+        start_values = np.array(self.start_range_hslider.value())
+        stop_values = np.array(self.stop_range_hslider.value())
         
-        ratio = new_stop_range/self.old_stop_range
+        new_range = new_max - new_min
+        if new_range < 0: return
+        
+        translation_difference = new_min - self.old_min
+        range_difference = new_range - self.old_range
 
-        #Calculate the new values
-        new_start_values = tuple(old_start_values*ratio)
-        new_stop_values = tuple(old_stop_values*ratio)
+        start_positions = (start_values - self.old_min)/float(self.old_range)
+        stop_positions = (stop_values - self.old_min)/float(self.old_range)
 
-        self.start_range_hslider.setRange(0, new_stop_range)
-        self.start_range_hslider.setValue(new_start_values)
-        self.stop_range_hslider.setRange(0, self.plot_settings_dict["Histogram/X Axis bins"])
-        self.stop_range_hslider.setValue(new_stop_values)
-        self.old_stop_range = new_stop_range
+        new_start_values = start_positions * new_range + new_min
+        new_stop_values = stop_positions * new_range + new_min
+
+
+        self.start_range_hslider.setRange(new_min, new_max)
+        self.start_range_hslider.setValue(tuple(new_start_values))
+        self.stop_range_hslider.setRange(new_min, new_max)
+        self.stop_range_hslider.setValue(tuple(new_stop_values))
+        self.old_range = new_range
+        self.old_min = new_min
 
         self.start_roi.setRegion(self.start_range_hslider.value())
         self.stop_roi.setRegion(self.stop_range_hslider.value())
@@ -1279,6 +1283,7 @@ class GUIv2():
         self.graph_info.clear()
         self.line_selector.clear()
         self.clear_btn.set_checked(False)
+        self.roi_btn.set_checked(False)
         
     def what_btn_is_checked(self, button_list, *a):
         states = [button.is_checked() for button in button_list]
@@ -1295,7 +1300,12 @@ class GUIv2():
         step = "center"
         
         #Set the data in the databox
-        self.databox["x"], self.databox["y"], root_data = data
+        x, y, root_data = data
+        min_value = min(root_data)
+        max_value = max(root_data)
+        if button == "PSD":
+            min_value = 0
+            max_value = 1
 
         if "No lines for now." in self.line_selector.get_all_items():
             pen = pg.mkPen(pen_data)
@@ -1327,6 +1337,8 @@ class GUIv2():
         self.graph_info[line.name()] = {"style":type_,"fill":fill_level,"type":button}
         self.data[line.name()] = root_data
 
+        self.change_bin_number(min_value, max_value)
+
     def plot_2dhist(self, data, button: str):
         pen_data = None
         brush_data = None
@@ -1334,7 +1346,7 @@ class GUIv2():
         type_ = "2D-HIST"
         name = self.plot_settings_dict["Line/Name"]
 
-        self.databox["x"], self.databox["y"], density_data, original_data = data
+        x, y, density_data, original_data = data
         
         transform = QtGui.QTransform()
         transform.scale(1,1)
@@ -1424,6 +1436,13 @@ class GUIv2():
 
         if self.root_dict["ROOT Types/Type chosen"] == "RAW" and two_files_pass and (self.cpp_tof_btn.is_checked()):
             self.csv_name = read_root.generate_csv_name(start_file, start_btn, stop_btn, time_window_quantity)
+            if Merger.cuts_enabled:
+                starts = np.array(self.start_range_hslider.value()).astype(int)
+                stops = np.array(self.stop_range_hslider.value()).astype(int)
+                start_string = f"{starts[0]}-{starts[1]}"
+                stop_string = f"{stops[0]}-{stops[1]}"
+                self.csv_name = read_root.generate_csv_name(start_file, start_btn, stop_btn, time_window_quantity, True, (start_string, stop_string))
+                
             
             self.root_dict.disable()
             self.cpp_tof_btn.disable()
@@ -1601,7 +1620,7 @@ class GUIv2():
 
     def plot_selection(self, *a):
         # Disable the buttons that have a file that contains no data.
-        if self.load_states:
+        if hasattr(self, "load_states") and self.load_states:
             self.check_thread = QtCore.QThread()
             self.worker = QtClasses.CheckFiles()
             QtClasses.CheckFiles.gen_path = [self.complete_path, self.root_dict["ROOT Types/Type chosen"]]

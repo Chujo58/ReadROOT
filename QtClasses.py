@@ -102,10 +102,11 @@ class CheckFiles(QtCore.QObject):
             
 class SelectionBox(QtCore.QObject):
     on_save = QtCore.pyqtSignal(str)
-    def __init__(self):
+    def __init__(self, default_text: str = None):
         super(QtCore.QObject, self).__init__()
         self.grid = g.GridLayout(False)
-        self._searchable_combo = self.grid.place_object(g.ComboBox([]))
+        default = [] if default_text is None else [default_text]
+        self._searchable_combo = self.grid.place_object(g.ComboBox(default))
     
     def add_button(self, button=None):
         self._save_btn = self.grid.place_object(g.Button(" ")) if button is None else button

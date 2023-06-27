@@ -70,8 +70,8 @@ class Merger(QtCore.QObject):
             unfiltered_root_file1 = root_file1
 
         if self.cuts_enabled:
-            filtered_root_file0 = unfiltered_root_file0.iloc(read_root.define_cut(*self.cuts[0],unfiltered_root_file0))
-            filtered_root_file1 = unfiltered_root_file1.iloc(read_root.define_cut(*self.cuts[1],unfiltered_root_file1))
+            filtered_root_file0 = unfiltered_root_file0.iloc[read_root.define_cut(*self.cuts[0],unfiltered_root_file0["Energy"])]
+            filtered_root_file1 = unfiltered_root_file1.iloc[read_root.define_cut(*self.cuts[1],unfiltered_root_file1["Energy"])]
         else:
             filtered_root_file0 = unfiltered_root_file0
             filtered_root_file1 = unfiltered_root_file1       
