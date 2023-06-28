@@ -9,11 +9,6 @@ import pint
 
 import os as _os
 
-# import cppimport
-# try:
-#     lib = cppimport.imp("wrap")
-# except:
-#     lib = cppimport.imp_from_filepath("wrap.cpp")
 
 
 def define_cut(start: int, stop: int, data_set: pandas.DataFrame) -> numpy.array:
@@ -96,15 +91,35 @@ def generate_csv_name(file_path, start: int, stop: int, window: pint.Quantity, c
 
     return _os.path.join(directory, csv_name)
 
-def get_cpp_tof_hist(file_path: str, min_: int, max_: int, default_bins=8192):
-    df = pandas.read_csv(file_path, compression="bz2")
+def get_cpp_tof_hist(file_path: str, min_: int, max_: int, default_bins=8192, compress=True) -> tuple[numpy.array, numpy.array, numpy.array]:
+    """Generates the TOF histogram
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the csv file containing the time and energy information
+    min_ : int
+        Minimum time for the TOF bins
+    max_ : int
+        Maximum time for the TOF bins
+    default_bins : int, optional
+        Number of bins to use for the X axis, by default 8192
+    compress : bool, optional
+        Whether the file is compressed or not, by default True
+
+    Returns
+    -------
+    output : tuple[numpy.array, numpy.array, numpy.array]
+        Tuple containing the x bins, y bins and TOF data.
+    """
+    df = pandas.read_csv(file_path, compression="bz2") if compress else pandas.read_csv(file_path)
     delta_time = (numpy.array(df["Stop Time"]) - numpy.array(df["Start Time"]))*1e-3
 
     hist = numpy.histogram(delta_time, default_bins, range=(min_, max_))
     y, x = hist
     return (x, y, delta_time)
 
-def get_cpp_evse_hist(file_path: str, xbins: int, ybins: int) -> tuple[numpy.array, numpy.array, numpy.ndarray]:
+def get_cpp_evse_hist(file_path: str, xbins: int, ybins: int, compress=True) -> tuple[numpy.array, numpy.array, numpy.ndarray, tuple[numpy.array, numpy.array]]:
     """Generates the Energy vs Energy 2D histogram
 
     Parameters
@@ -115,18 +130,20 @@ def get_cpp_evse_hist(file_path: str, xbins: int, ybins: int) -> tuple[numpy.arr
         Number of bins on the x-axis
     ybins : int
         Number of bins on the y-axis
+    compress : bool, optional
+        Whether the file is compressed or not, by default True
 
     Returns
     -------
-    output: tuple[numpy.array, numpy.array, numpy.ndarray]
-        Tuple containing the x bins, y bins and the density (z axis counts) calculated the histogram.
+    output: tuple[numpy.array, numpy.array, numpy.ndarray, tuple[numpy.array, numpy.array]]
+        Tuple containing the x bins, y bins and the density (z axis counts) calculated by the histogram. The data used to calculate the histogram is also returned.
     """
-    df = pandas.read_csv(file_path, compression="bz2")
+    df = pandas.read_csv(file_path, compression="bz2") if compress else pandas.read_csv(file_path)
 
     density, xedge, yedge = numpy.histogram2d(df["Start Energy"], df["Stop Energy"], (xbins, ybins))
     return (xedge, yedge, density, (df["Start Energy"], df["Stop Energy"]))
 
-def get_cpp_tofvse_hist(file_path: str, min_: int, max_: int, default_energy_bins=4096, default_tof_bins=8192) -> tuple[numpy.array, numpy.array, numpy.ndarray]:
+def get_cpp_tofvse_hist(file_path: str, min_: int, max_: int, default_energy_bins=4096, default_tof_bins=8192, compress=True) -> tuple[numpy.array, numpy.array, numpy.ndarray]:
     """Generates the TOF vs Energy 2D histogram
 
     Parameters
@@ -141,13 +158,15 @@ def get_cpp_tofvse_hist(file_path: str, min_: int, max_: int, default_energy_bin
         Number of bins to use for the X axis, by default 4096
     default_tof_bins : int, optional
         Number of bins to use for the Y axis, by default 8192
+    compress : bool, optional
+        Whether the file is compressed or not, by default True
 
     Returns
     -------
     output: tuple[numpy.array, numpy.array, numpy.ndarray]
-        Tuple containing the x bins, y bins and the density (z axis counts) calculated the histogram.
+        Tuple containing the x bins, y bins and the density (z axis counts) calculated by the histogram.
     """
-    df = pandas.read_csv(file_path, compression="bz2")
+    df = pandas.read_csv(file_path, compression="bz2") if compress else pandas.read_csv(file_path)
     min_e = min(df["Stop Energy"])
     max_e = max(df["Stop Energy"])
     
@@ -345,6 +364,12 @@ class _root_reader():
         return (x, y, delta_time)
 
     def __CPPTOF__(self, file1, file2, low_cut_0, high_cut_0, low_cut_1, high_cut_1, window, min_bin, max_bin, default_bins=8192, default_bin_size=0.045, tree="Data_R"):
+        import cppimport
+        try:
+            lib = cppimport.imp("wrap")
+        except:
+            lib = cppimport.imp_from_filepath("wrap.cpp")
+
         ch0_data = self.__getdata__(file1, tree, True)
         ch1_data = self.__getdata__(file2, tree, True)
 
@@ -522,7 +547,7 @@ class root_reader_v2():
 
         return filtered_dataframe
 
-    def len(self) -> int:
+    def __len__(self) -> int:
         data = self.open()
         return len(data)
 

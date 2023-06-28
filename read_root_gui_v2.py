@@ -212,9 +212,10 @@ def removeItem(combo_box: g.ComboBox, name: str):
     combo_box.remove_item(index_to_remove)
 
 class GUIv2():
-    def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True):
+    def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True, dark_theme: bool = None, compress: bool = True):
         self.ratio = int(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
-        self.dark_theme_on = not dd.isDark()
+        self.dark_theme_on = dd.isDark() if dark_theme is None else dark_theme
+        Converter.compress = compress
         self.colormap = pg.colormap.getFromMatplotlib("black_turbo") if self.dark_theme_on else pg.colormap.getFromMatplotlib("white_turbo")
         self.margins = int(10/3*self.ratio)
         width, height = self.get_screen_resolution()
@@ -1351,6 +1352,10 @@ class GUIv2():
         transform = QtGui.QTransform()
         transform.scale(1,1)
 
+        if button == "EvsE":
+            old_y, old_x = density_data.shape
+            x_scale = y_scale = int(self.spectra_dict["Energy N channels"])
+            transform.scale(x_scale/old_x, y_scale/old_y)
         if button == "PSDvsE":
             transform.scale(1, 1/self.plot_settings_dict["Histogram/Y Axis bins"])
         if button == "TOFvsE":
@@ -1463,15 +1468,15 @@ class GUIv2():
             self.merger.finished.connect(self.merger.deleteLater)
             
             if button == "TOF":
-                self.merger.finished.connect(lambda: self.plot_data(read_root.get_cpp_tof_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"]), "HIST", "TOF"))
+                self.merger.finished.connect(lambda: self.plot_data(read_root.get_cpp_tof_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"],compress=Converter.compress), "HIST", "TOF"))
                 self.merger.finished.connect(lambda: self.tof_btn.set_checked(False))
             
             if button == "EvsE":
-                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_evse_hist(self.csv_name, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"]), button))
+                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_evse_hist(self.csv_name, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"],compress=Converter.compress), button))
                 self.merger.finished.connect(lambda: self.evse_btn.set_checked(False))
             
             if button == "TOFvsE":
-                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_tofvse_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"]), button))
+                self.merger.finished.connect(lambda: self.plot_2dhist(read_root.get_cpp_tofvse_hist(self.csv_name, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"],compress=Converter.compress), button))
                 self.merger.finished.connect(lambda: self.tofvse_btn.set_checked(False))
             
             self.merger.finished.connect(self.clean_up)
@@ -1489,15 +1494,15 @@ class GUIv2():
             self.selection.disable()
 
             if button == "TOF":
-                self.plot_data(read_root.get_cpp_tof_hist(csv_to_use, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"]), "HIST", "TOF")
+                self.plot_data(read_root.get_cpp_tof_hist(csv_to_use, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"],compress=Converter.compress), "HIST", "TOF")
                 self.tof_btn.set_checked(False)
 
             if button == "EvsE":
-                self.plot_2dhist(read_root.get_cpp_evse_hist(csv_to_use, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"]), button)
+                self.plot_2dhist(read_root.get_cpp_evse_hist(csv_to_use, self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"],compress=Converter.compress), button)
                 self.evse_btn.set_checked(False)
 
             if button == "TOFvsE":
-                self.plot_2dhist(read_root.get_cpp_tofvse_hist(csv_to_use, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"]), button)
+                self.plot_2dhist(read_root.get_cpp_tofvse_hist(csv_to_use, self.plot_settings_dict["Histogram/Minimum bin"], self.plot_settings_dict["Histogram/Maximum bin"], self.plot_settings_dict["Histogram/X Axis bins"], self.plot_settings_dict["Histogram/Y Axis bins"],compress=Converter.compress), button)
                 self.tofvse_btn.set_checked(False)
 
             self.clean_up()
@@ -1508,7 +1513,9 @@ class GUIv2():
     def clean_up(self, *a):
         self.root_dict.enable()
         self.cpp_tof_btn.enable()
+        self.cpp_tof_btn.set_checked(False)
         self.roi_btn.enable()
+        self.roi_btn.set_checked(False)
         self.selection.enable()
 
         # Enables all the buttons

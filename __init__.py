@@ -9,10 +9,11 @@ from . import read_root_gui_v2
 from . import IOClasses
 from . import QtClasses
 
-# reader = read_root._root_reader
+reader = read_root._root_reader
 reader_v2 = read_root.root_reader_v2
 gui = read_root_gui.GUI
 guiv2 = read_root_gui_v2.GUIv2
+fileexp = IOClasses.FileExplorer
 config = IOClasses.Configuration
 setup = IOClasses.SetUpCpp
 
@@ -50,24 +51,27 @@ black_turbo = matplotlib.colors.LinearSegmentedColormap.from_list('black_turbo',
 matplotlib.colormaps.register(white_turbo)
 matplotlib.colormaps.register(black_turbo)
 
-
+from colorama import init
+from termcolor import cprint
 
 with open("config.json", "r") as f:
     info = json.load(f)
 
 def do_config():
-    print(f"{QtClasses.bcolors.BOLD}Available configurations: {QtClasses.bcolors.ENDC}")
+    init()
+    cprint("Available configurations: ", "cyan", attrs=["bold"])
     keys_to_print = [key for key in info.keys() if key != "LoadConfig"]
     for index, key in enumerate(keys_to_print):
         print(key, end=", ") if index != len(keys_to_print)-1 else print(key, end=".\n")
         
-    user_input = input(f"{QtClasses.bcolors.UNDERLINE}What configuration do you want to use?{QtClasses.bcolors.ENDC} ")
+    cprint("What configuration do you want to use? ", "light_grey", attrs=["underline"])
+    user_input = input()
     output = difflib.get_close_matches(user_input, keys_to_print, 1)[0]
     configuration = config(output, "config.json")
     setup("funcs.hpp").load_configuration(configuration)
     setup("wrap.cpp").load_pybind11(configuration)
 
-    print(f"{QtClasses.bcolors.BOLD}Configuration set!{QtClasses.bcolors.ENDC}")
+    cprint("Configuration set!", "cyan", attrs=["bold"])
     configuration.config_done()
 
 if info.get("LoadConfig"):

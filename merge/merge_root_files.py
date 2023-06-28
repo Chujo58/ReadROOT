@@ -119,6 +119,7 @@ class Merger(QtCore.QObject):
         return result
 
 class Converter:
+    compress = True
     def __init__(self, data_set: list[ConsolidatedData]):
         self.data_set: list[ConsolidatedData] = data_set
 
@@ -138,7 +139,7 @@ class Converter:
         return pd.DataFrame.from_dict(temp_dict)
 
     def save(self, file_path: str):
-        """Saves the data into a csv file compressed with bz2.
+        """Saves the data into a csv file compressed with bz2 if compress is set to `True`.
 
         Parameters
         ----------
@@ -146,7 +147,7 @@ class Converter:
             Path to the file
         """
         df = self.convert()
-        df.to_csv(file_path, index=False, compression="bz2")
+        df.to_csv(file_path, index=False, compression="bz2") if Converter.compress else df.to_csv(file_path, index=False)
 
                 
 if __name__ == '__main__':

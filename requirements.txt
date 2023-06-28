@@ -12,3 +12,6 @@ superqt
 bs4
 tk
 pint
+colorama
+termcolor
+cppimport
