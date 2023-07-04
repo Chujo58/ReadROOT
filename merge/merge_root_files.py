@@ -19,6 +19,7 @@ def uint64_diff(a: U64, b: U64) -> tuple[U64, int]:
     else:
         return b - a, -1
     
+#Throughout the rest of the code 0 is considered to be the stop and 1 the start. This means that doing t0-t1 is doing stop-start like normal.
     
 @dataclass
 class ConsolidatedData:
@@ -131,10 +132,10 @@ class Converter:
         output_tuple : pd.DataFrame
             Start timestamps, stop timestamps, start energies and stop energies of the original list.
         """
-        start_time_stamps = [item.timestamp0 for item in self.data_set]
-        stop_time_stamps = [item.timestamp1 for item in self.data_set]
-        start_energies = [item.energy0 for item in self.data_set]
-        stop_energies = [item.energy1 for item in self.data_set]
+        start_time_stamps = [item.timestamp1 for item in self.data_set]
+        stop_time_stamps = [item.timestamp0 for item in self.data_set]
+        start_energies = [item.energy1 for item in self.data_set]
+        stop_energies = [item.energy0 for item in self.data_set]
         temp_dict = {"Start Time":start_time_stamps,"Stop Time":stop_time_stamps,"Start Energy":start_energies,"Stop Energy":stop_energies}
         return pd.DataFrame.from_dict(temp_dict)
 

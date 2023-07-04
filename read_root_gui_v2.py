@@ -1145,6 +1145,9 @@ class GUIv2():
 
     def save_changes(self, *a):
         line_selected = self.line_selector.get_text()
+        if len(self.selection.get_text().split("_")) > 3:
+            cuts_on = True
+
         ranged_hist = ["PSD","TIME","TOF"]
         ranged_2dhist = ["TOFvsE","PSDvsE"]
         #Check for a No lines for now:
@@ -1198,11 +1201,27 @@ class GUIv2():
             transform = QtGui.QTransform()
             transform.scale(1,1)
 
+            if type_ == "EvsE":
+                old_y, old_x = density.shape
+                x_scale = y_scale = int(self.spectra_dict["Energy N channels"])
+                transform.scale(x_scale/old_x, y_scale/old_y)
+                if cuts_on:
+                    transform = QtGui.QTransform()
+                    string_to_edit = self.selection.get_text().split("_")[-1][1:-5].split(",")
+                    start_channel_cut = [float(item) for item in string_to_edit[0][1:-1].split("-")]
+                    stop_channel_cut = [float(item) for item in string_to_edit[1][2:-1].split("-")]
+                    x_scale = (start_channel_cut[1] - start_channel_cut[0])/old_x
+                    y_scale = (stop_channel_cut[1] - stop_channel_cut[0])/old_y
+
+                    transform.scale(x_scale, y_scale)     
+                    transform.translate(start_channel_cut[0]/x_scale, stop_channel_cut[0]/y_scale)
             if type_ == "PSDvsE":
                 transform.scale(1, 1/self.plot_settings_dict["Histogram/Y Axis bins"])
             if type_ == "TOFvsE":
+                _, old_x = density.shape
+                x_scale = int(self.spectra_dict["Energy N channels"])
                 scale_factor = (self.plot_settings_dict["Histogram/Maximum bin"]-self.plot_settings_dict["Histogram/Minimum bin"])/self.plot_settings_dict["Histogram/Y Axis bins"]
-                transform.scale(1, scale_factor)
+                transform.scale(x_scale/old_x, scale_factor)
                 transform.translate(0,self.plot_settings_dict["Histogram/Minimum bin"]*scale_factor)
 
             image = pg.ImageItem(image=density)
@@ -1266,9 +1285,13 @@ class GUIv2():
         self.brushes.pop(line_selected)
         self.graph_info.pop(line_selected)
         self.data.pop(line_selected)
-        plotted_items_names = [item.name() for item in self.plot.listDataItems()]
+        
+        plotted_items_names = self.lines.keys()
+        self.line_selector.block_signals()
         self.line_selector.clear()
         [self.line_selector.add_item(item) for item in plotted_items_names]
+        self.line_selector.unblock_signals()
+
 
     def save_snapshot(self, *a):
         exporter = export.ImageExporter(self.plot)
@@ -1341,6 +1364,8 @@ class GUIv2():
         self.change_bin_number(min_value, max_value)
 
     def plot_2dhist(self, data, button: str):
+        if len(self.selection.get_text().split("_")) > 3:
+            cuts_on = True
         pen_data = None
         brush_data = None
         fill_level = None
@@ -1356,6 +1381,17 @@ class GUIv2():
             old_y, old_x = density_data.shape
             x_scale = y_scale = int(self.spectra_dict["Energy N channels"])
             transform.scale(x_scale/old_x, y_scale/old_y)
+            if cuts_on:
+                transform = QtGui.QTransform()
+                string_to_edit = self.selection.get_text().split("_")[-1][1:-5].split(",")
+                start_channel_cut = [float(item) for item in string_to_edit[0][1:-1].split("-")]
+                stop_channel_cut = [float(item) for item in string_to_edit[1][2:-1].split("-")]
+                x_scale = (start_channel_cut[1] - start_channel_cut[0])/old_x
+                y_scale = (stop_channel_cut[1] - stop_channel_cut[0])/old_y
+
+                transform.scale(x_scale, y_scale)     
+                transform.translate(start_channel_cut[0]/x_scale, stop_channel_cut[0]/y_scale)
+                
         if button == "PSDvsE":
             transform.scale(1, 1/self.plot_settings_dict["Histogram/Y Axis bins"])
         if button == "TOFvsE":
@@ -1587,7 +1623,7 @@ class GUIv2():
             
             data = root_reader(path_to_use, self.tree).get_psdvse_hist(self.plot_settings_dict["Histogram/X Axis bins"],self.plot_settings_dict["Histogram/Y Axis bins"])
 
-            self.plot_2dhist(data[2], "PSDvsE")
+            self.plot_2dhist(data, "PSDvsE")
             self.psdvse_btn.set_checked(False)
             self.clean_up()
 
