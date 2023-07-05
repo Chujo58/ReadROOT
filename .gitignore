@@ -7,3 +7,6 @@ egg_settings
 Images/palettes
 *.pyd
 Fonts
+build
+dist
+ReadROOT.egg-info
