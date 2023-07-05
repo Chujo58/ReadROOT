@@ -1,6 +1,8 @@
+import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5.QtWidgets import QWidget
 from spinmob.egg import gui as g
-import time, os, superqt
+import datetime, os, superqt
 import read_root
 
 class bcolors:
@@ -143,7 +145,168 @@ class SelectionBox(QtCore.QObject):
         self._searchable_combo.enable()
         self._save_btn.enable()
 
+#New version of the SelectionBox class!
+class Selecter(QtCore.QObject):
+    keep = QtCore.pyqtSignal(str)
+    On = QtCore.pyqtSignal(bool)
+    dark_theme = True
+    def __init__(self, default_text: str = None, parent = None) -> None:
+        super(QtCore.QObject, self).__init__()
+        self.grid = g.GridLayout(False)
+        self.parent = parent
+
+        default = [] if default_text is None else [default_text]
+        self.combo = self.grid.place_object(g.ComboBox(default))
+        self.button = self.grid.place_object(g.Button(" ", True))
+        self.button.signal_clicked.connect(self.__emit_changes)
+
+    def show(self):
+        if self.parent is not None:
+            self.parent.place_object(self.grid)
+
+    def __emit_changes(self):
+        if self.button.is_checked():
+            self.keep.emit(self.combo.get_text())
+        self.On.emit(self.button.is_checked())
+
+    def is_checked(self):
+        return self.button.is_checked()
     
+    def set_checked(self, state: bool):
+        self.button.set_checked(state)
+    
+    def change_combo(self, style_sheet):
+        self.combo._widget.setStyleSheet(style_sheet)
+
+    def change_button(self, button_icon_on: str, button_icon_off: str, button_icon_disabled: str, button_highlight_color: tuple):
+        list_color = [str(i) for i in button_highlight_color]
+        string_color = ",".join(list_color)
+        QSS = """
+            QPushButton {
+        """ + f"image: url({button_icon_off});" + """
+            }
+
+            QPushButton::checked{
+        """ + f"image: url({button_icon_on});" + """
+        """ + f"border: 2px solid rgb({string_color});" + """
+        """ + f"background: {'rgb(54,54,54)' if Selecter.dark_theme else 'rgb(220,220,220)'};" + """
+            }
+
+            QPushButton::disabled{
+        """ + f"image: url({button_icon_disabled});" + """
+        """ + f"background: {'rgb(54,54,54)' if Selecter.dark_theme else 'rgb(220,220,220)'};" + """
+            }
+        """
+        self.button._widget.setStyleSheet(QSS)
+
+    def set_width(self, width):
+        self.combo.set_width(width)
+   
+    def set_height(self, height):
+        self.combo.set_height(height)
+        self.button.set_height(height).set_width(height)
+
+    def add_items(self, items):
+        for item in items:
+            self.combo.add_item(item)
+
+    def add_item(self, item):
+        self.add_items([item])
+
+    def clear(self):
+        self.combo.clear()
+
+    def disable(self):
+        self.combo.disable()
+        self.button.disable()
+
+    def enable(self):
+        self.combo.enable()
+        self.button.enable()
+
+    def get_text(self):
+        return self.combo.get_text()
+
+    
+class TextBox(QtWidgets.QWidget):
+    text_modified = QtCore.pyqtSignal(int) # Plain text 0, HTML 1 and MD 2.
+    def __init__(self):
+        super(QtWidgets.QWidget, self).__init__()
+
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0,0,0,0)
+        self.setLayout(layout)
+
+        self.text_zone = QtWidgets.QTextEdit()
+        self.text_zone.setReadOnly(True)
+
+        layout.addWidget(self.text_zone)
+
+    def set_width(self, width: int):
+        self.text_zone.setMinimumWidth(width)
+
+    def add_text(self, text: str):
+        self.text_zone.append(text)
+        self.text_modified.emit(0)
+
+    def add_html(self, html: str):
+        self.text_zone.insertHtml(html)
+        self.text_modified.emit(1)
+
+    def add_md(self, md: str):
+        self.text_zone.setMarkdown(md)
+        self.text_modified.emit(2)
+
+    def clear(self):
+        self.text_zone.clear()
+
+class Logger(QtCore.QObject):
+    start_tab = 0
+    text_width = 500
+    def __init__(self, parent: g.TabArea) -> None:
+        super(QtCore.QObject, self).__init__()
+
+        self._parent = parent
+        self.log_tab = self._parent.add_tab("Logs")
+
+        self.index = self._parent.objects.index(self.log_tab)
+        self.new_logs = 0
+        self.change_icon()
+        
+        self.text = self.log_tab.place_object(TextBox())
+        self.text.set_width(self.text_width)
+
+        self.text.text_modified.connect(self.change_icon)
+        self._parent.signal_switched.connect(self.changed_tab)
+
+        self.previous_tab = self.start_tab
+
+    def change_icon(self):
+        if hasattr(self, "new_logs") and self.new_logs <= 9:
+            self._parent._widget.setTabIcon(self.index, QtGui.QIcon(f"Images/Log/{self.new_logs}.png"))
+        elif self.new_logs >= 9:
+            self._parent._widget.setTabIcon(self.index, QtGui.QIcon("Images/Log/9+.png"))
+
+    def changed_tab(self):
+        current_tab = self._parent.get_current_tab()
+        if current_tab == self.index and self.previous_tab != self.index:
+            self.new_logs = 0
+            self.change_icon()
+        self.previous_tab = current_tab
+
+    def add_log(self, log_message: str, log_type: str = None) -> None:
+        current_time = datetime.datetime.now()
+        formatted_log_message = f"{current_time.strftime('%Y-%m-%d %H:%M')} - {log_message}\n"
+        self.new_logs += 1
+        if log_type == "HTML":
+            self.text.add_html(formatted_log_message)
+        if log_type == "Plain":
+            self.text.add_text(formatted_log_message)
+        if log_type == "MarkDown":
+            self.text.add_md(formatted_log_message)
+        if log_type == None:
+            self.text.add_text(formatted_log_message)
+
 
 
 

@@ -28,6 +28,8 @@ from . import QtClasses
 IconLabel = QtClasses.IconLabel
 Seperator = QtClasses.Seperator
 SelectionBox = QtClasses.SelectionBox
+Selecter = QtClasses.Selecter
+Logger = QtClasses.Logger
 bcolors = QtClasses.bcolors
 # Import the Merger (Fast TOF calculations):
 from . import merge
@@ -39,20 +41,12 @@ Converter = merge.Converter
 import spinmob as s
 import spinmob.egg as egg
 import numpy as np
-import uproot as ur
-import pandas as pd
 import tkinter.filedialog as fd
 import pyqtgraph as pg
 import ctypes as ct
 import pyqtgraph.exporters as export
 import darkdetect as dd
-import re
-from PyQt5 import QtGui, QtWidgets, QtCore
-import time
-from scipy.optimize import curve_fit as cf
-from . import ErrorPropagation as ep
-from matplotlib.colors import LinearSegmentedColormap
-from matplotlib import cm
+from PyQt5 import QtGui, QtCore
 import superqt, datetime
 #----------------------------------------------------------------------------
 
@@ -451,6 +445,8 @@ class GUIv2():
 
         self.generate_compass_tab()
         self.generate_graph_tab()
+        Logger.text_width = 1265*self.ratio
+        self.logs = Logger(main_tab_area)
 
         main_tab_area.set_current_tab(0)
 
@@ -601,7 +597,7 @@ class GUIv2():
         self.clear_btn.signal_toggled.connect(self.clear)
 
         #Adding the databox and the plot
-        inner_right.new_autorow()
+        # inner_right.new_autorow()
         plot_region = inner_right.place_object(pg.PlotWidget(), alignment=0)
         plot_region.setBackground("black") if self.dark_theme_on else plot_region.setBackground("white")
         self.plot = plot_region.getPlotItem()
@@ -662,6 +658,7 @@ class GUIv2():
         self.previous_start_btn = None
         self.previous_stop_btn = None
         
+        # Calculate TOF button theme:
         light_theme = """
             QPushButton{
                 border: 2px solid rgb(193,193,193);
@@ -722,16 +719,17 @@ class GUIv2():
 
         #MAKE SOMETHING FOR THE FILE SELECTION!
         temp_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
-        self.selection = SelectionBox("No CSV files for now.")
-        self.selection_button = self.make_channel_btn(self.selection.grid, "Select", 30, lambda x: None)
-        self.selection.add_button(self.selection_button)
-        temp_grid.place_object(self.selection.grid)
+        self.selection = Selecter("No CSV files for now.", parent=temp_grid)
+        self.selection.change_button("Images/OnSelect.png","Images/OffSelect.png","Images/DisabledSelect.png",(1,196,255))
+        self.selection.change_combo(self.dark_combo) if self.dark_theme_on else self.selection.change_combo(self.light_combo)
+        self.selection.show()
+        
         self.selection.set_height(30*self.ratio)
         self.selection.set_width(240*self.ratio)
-        self.selection.setStyleSheet(self.dark_combo) if self.dark_theme_on else self.selection.setStyleSheet(self.light_combo)
         collapse_grid_layout.new_autorow()
 
-        label_start = collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: ", 125*self.ratio))
+        #Start label
+        collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: ", 125*self.ratio))
         collapse_grid_layout.new_autorow()
 
         self.start_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledDoubleRangeSlider(Horizontal))
@@ -745,7 +743,8 @@ class GUIv2():
 
         collapse_grid_layout.new_autorow()
 
-        label_stop = collapse_grid_layout.place_object(IconLabel("Images/stop.png","Stop channel range: ", 125*self.ratio))
+        #Stop label
+        collapse_grid_layout.place_object(IconLabel("Images/stop.png","Stop channel range: ", 125*self.ratio))
         collapse_grid_layout.new_autorow()
 
         self.stop_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledDoubleRangeSlider(Horizontal))
@@ -759,8 +758,8 @@ class GUIv2():
 
         collapse_grid_layout.new_autorow()
 
-        # window_label = collapse_grid_layout.place_object(g.Label("Window time: ")).set_width(75*self.ratio)
-        window_label = collapse_grid_layout.place_object(IconLabel("Images/time.png","Window time: ",75*self.ratio))
+        #Window label
+        collapse_grid_layout.place_object(IconLabel("Images/time.png","Window time: ",75*self.ratio))
 
         self.time_range = collapse_grid_layout.place_object(superqt.QQuantity("10us"))
         self.time_range.setDecimals(2)
@@ -806,7 +805,7 @@ class GUIv2():
             for item in items_to_add:
                 split_item = item.split("_")[1:]
                 to_add = "_".join(split_item)
-                self.selection.add_items([to_add])
+                self.selection.add_item(to_add)
         
 
     def make_comp_btn(self, parent, tip_text, url_image, **kwargs):
@@ -881,13 +880,17 @@ class GUIv2():
     def search_folder(self):
         tkinter_result = fd.askdirectory()
         self.complete_path = os.path.realpath(tkinter_result)
-        self.folder_label.set_text("Folder selected!")
         for file in os.listdir(self.complete_path):
             if file.endswith(".xml"):
                 self.xml_file = file
             if file.endswith(".info"):
                 self.info_file = file
 
+        if not hasattr(self, "xml_file") and not hasattr(self, "info_file"):
+            self.logs.add_log("The folder searching was cancelled. Please reload a folder before using any of the GUI's functions.")
+            return 
+        
+        self.folder_label.set_text("Folder selected!")
         self.reload_csv_files()
         self.load_info_xml()
         
@@ -1040,7 +1043,7 @@ class GUIv2():
             try:
                 self.plot.removeItem(self.legend)
             except:
-                print("Could not remove an non-existing legend!")
+                self.logs.add_log("Could not remove an non-existing legend!")
     
     def change_grid(self, *a):
         self.plot.showGrid(x=self.plot_settings_dict["Grid/X Axis"], y=self.plot_settings_dict["Grid/Y Axis"])
@@ -1145,7 +1148,8 @@ class GUIv2():
 
     def save_changes(self, *a):
         line_selected = self.line_selector.get_text()
-        if len(self.selection.get_text().split("_")) > 3:
+        file_selected = self.selection.get_text()
+        if len(file_selected.split("_")) > 3:
             cuts_on = True
 
         ranged_hist = ["PSD","TIME","TOF"]
@@ -1207,7 +1211,7 @@ class GUIv2():
                 transform.scale(x_scale/old_x, y_scale/old_y)
                 if cuts_on:
                     transform = QtGui.QTransform()
-                    string_to_edit = self.selection.get_text().split("_")[-1][1:-5].split(",")
+                    string_to_edit = file_selected.split("_")[-1][1:-5].split(",")
                     start_channel_cut = [float(item) for item in string_to_edit[0][1:-1].split("-")]
                     stop_channel_cut = [float(item) for item in string_to_edit[1][2:-1].split("-")]
                     x_scale = (start_channel_cut[1] - start_channel_cut[0])/old_x
@@ -1364,7 +1368,8 @@ class GUIv2():
         self.change_bin_number(min_value, max_value)
 
     def plot_2dhist(self, data, button: str):
-        if len(self.selection.get_text().split("_")) > 3:
+        file_selected = self.selection.get_text()
+        if len(file_selected.split("_")) > 3:
             cuts_on = True
         pen_data = None
         brush_data = None
@@ -1383,7 +1388,7 @@ class GUIv2():
             transform.scale(x_scale/old_x, y_scale/old_y)
             if cuts_on:
                 transform = QtGui.QTransform()
-                string_to_edit = self.selection.get_text().split("_")[-1][1:-5].split(",")
+                string_to_edit = file_selected.split("_")[-1][1:-5].split(",")
                 start_channel_cut = [float(item) for item in string_to_edit[0][1:-1].split("-")]
                 stop_channel_cut = [float(item) for item in string_to_edit[1][2:-1].split("-")]
                 x_scale = (start_channel_cut[1] - start_channel_cut[0])/old_x
@@ -1444,7 +1449,7 @@ class GUIv2():
 
     def start_TOF(self, button, *a):
         two_files_pass = True if self.states.count(True) >= 2 else False
-        if not self.selection_button.is_checked():
+        if not self.selection.is_checked():
             start_btn = self.what_btn_is_checked(self.start_buttons_list)
             stop_btn = self.what_btn_is_checked(self.stop_buttons_list)
             
@@ -1521,7 +1526,7 @@ class GUIv2():
             self.tof_thread.start()
             self.rerun_tof = False
 
-        if two_files_pass and self.selection_button.is_checked():
+        if two_files_pass and self.selection.is_checked():
             csv_to_use = os.path.join(self.complete_path, "TOF Data",f"{self.run_id}_{self.selection.get_text()}")
 
             self.root_dict.disable()
@@ -1542,7 +1547,7 @@ class GUIv2():
                 self.tofvse_btn.set_checked(False)
 
             self.clean_up()
-            self.selection_button.set_checked(False)
+            self.selection.set_checked(False)
             
 
 
@@ -1660,6 +1665,12 @@ class GUIv2():
 
         self.plot_selection(*a)
 
+    def done_checking_files(self):
+        try:
+            self.disable_all_buttons(self.states)
+        except:
+            self.logs.add_log("Could not disable the buttons.")
+
 
     def plot_selection(self, *a):
         # Disable the buttons that have a file that contains no data.
@@ -1679,12 +1690,13 @@ class GUIv2():
             self.worker.progress.connect(self.update_states)
 
             self.check_thread.start()
-            self.worker.finished.connect(lambda: self.disable_all_buttons(self.states))
+            self.worker.finished.connect(lambda: self.done_checking_files)
             self.load_states = False
+        if not hasattr(self, "load_states") and a[0]:
+            self.logs.add_log("Did you properly load your folder?")
 
         if a[0]:
-            try: self.disable_all_buttons(self.states)
-            except: pass
+            self.done_checking_files()
         else:
             self.enable_all_buttons()
 
