@@ -1,4 +1,0 @@
-/GUI/Energy Histogram|expanded	True
-/GUI/Energy Histogram/Energy bins	'4096'
-/GUI/Energy Histogram/Energy bins|expanded	True
-
