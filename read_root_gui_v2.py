@@ -1665,12 +1665,6 @@ class GUIv2():
 
         self.plot_selection(*a)
 
-    def done_checking_files(self):
-        try:
-            self.disable_all_buttons(self.states)
-        except:
-            self.logs.add_log("Could not disable the buttons.")
-
 
     def plot_selection(self, *a):
         # Disable the buttons that have a file that contains no data.
@@ -1690,13 +1684,15 @@ class GUIv2():
             self.worker.progress.connect(self.update_states)
 
             self.check_thread.start()
-            self.worker.finished.connect(lambda: self.done_checking_files)
+            self.worker.finished.connect(lambda: self.disable_all_buttons(self.states))
             self.load_states = False
+
         if not hasattr(self, "load_states") and a[0]:
             self.logs.add_log("Did you properly load your folder?")
 
         if a[0]:
-            self.done_checking_files()
+            try: self.disable_all_buttons(self.states)
+            except: pass
         else:
             self.enable_all_buttons()
 
