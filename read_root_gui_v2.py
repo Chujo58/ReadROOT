@@ -207,7 +207,7 @@ def removeItem(combo_box: g.ComboBox, name: str):
 
 class GUIv2():
     def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True, dark_theme: bool = None, compress: bool = True):
-        self.ratio = int(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
+        self.ratio = float(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
         self.dark_theme_on = dd.isDark() if dark_theme is None else dark_theme
         Converter.compress = compress
         self.colormap = pg.colormap.getFromMatplotlib("black_turbo") if self.dark_theme_on else pg.colormap.getFromMatplotlib("white_turbo")
@@ -226,7 +226,7 @@ class GUIv2():
         myappid = 'mycompany.myproduct.subproduct.version' # arbitrary string
         ct.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
-        self.TopGrid = window.place_object(g.GridLayout(True)).set_height(52*self.ratio)#.set_width(1273*self.ratio)
+        self.TopGrid = window.place_object(g.GridLayout(True)).set_height(int(52*self.ratio))#.set_width(1273*self.ratio)
         window.new_autorow()
         self.BotGrid = window.place_object(g.GridLayout(True), alignment=0)
         
@@ -412,12 +412,12 @@ class GUIv2():
         #For the channel buttons:
         self.previous_btn = None
         #Search folder button
-        search_folder_btn = self.TopGrid.place_object(g.Button(" ",tip="Search a folder!")).set_width(45*self.ratio).set_height(45*self.ratio)
+        search_folder_btn = self.TopGrid.place_object(g.Button(" ",tip="Search a folder!")).set_width(int(45*self.ratio)).set_height(int(45*self.ratio))
         search_folder_btn.set_style_unchecked(style="image: url(Images/OpenFolder.png)")
         search_folder_btn.signal_clicked.connect(self.search_folder)
 
         #File type (Raw, unfiltered, filtered)
-        self.root_dict = self.TopGrid.place_object(g.TreeDictionary(), alignment=0).set_width(245*self.ratio).set_height(40*self.ratio)
+        self.root_dict = self.TopGrid.place_object(g.TreeDictionary(), alignment=0).set_width(int(245*self.ratio)).set_height(int(40*self.ratio))
         self.root_dict.add_parameter("ROOT Types/Type chosen",values=["RAW","UNFILTERED","FILTERED"])#.set_width(150*self.ratio)
         self.root_dict.connect_signal_changed("ROOT Types/Type chosen", self.changing_tree)
         self.root_dict._widget.setHeaderLabels(["Parameters long","Value"])
@@ -431,7 +431,7 @@ class GUIv2():
         self.ch2_btn = self.make_channel_btn(self.TopGrid, "2", 45, self.channel_toggling)
         self.ch3_btn = self.make_channel_btn(self.TopGrid, "3", 45, self.channel_toggling)
 
-        self.TopGrid.place_object(g.GridLayout()).set_width(680*self.ratio)
+        self.TopGrid.place_object(g.GridLayout()).set_width(int(680*self.ratio))
 
     def generate_bot_grid(self):
         main_tab_area = self.BotGrid.place_object(g.TabArea(), alignment=0)
@@ -445,13 +445,13 @@ class GUIv2():
 
         self.generate_compass_tab()
         self.generate_graph_tab()
-        Logger.text_width = 1265*self.ratio
+        Logger.text_width = int(1265*self.ratio)
         self.logs = Logger(main_tab_area)
 
         main_tab_area.set_current_tab(0)
 
     def generate_compass_tab(self):
-        self.run_dict = self.compass_tab.place_object(g.TreeDictionary(),alignment=0,column_span=3).set_height(100*self.ratio)
+        self.run_dict = self.compass_tab.place_object(g.TreeDictionary(),alignment=0,column_span=3).set_height(int(100*self.ratio))
         self.run_dict._widget.setHeaderLabels(["Parameters long","Value"])
         self.run_dict.add_parameter("Run Info/Run ID", value=" ", readonly=True,tip="Run ID name set in CoMPASS/Folder name in which files are saved.")
         self.run_dict.add_parameter("Run Info/Start Time", value=" ", readonly=True, tip="Time at which the acquisition started.")
@@ -460,20 +460,20 @@ class GUIv2():
 
         self.compass_tab.new_autorow()
 
-        self.board_dict_1 = self.compass_tab.place_object(g.TreeDictionary(),alignment=0).set_height(100*self.ratio)
+        self.board_dict_1 = self.compass_tab.place_object(g.TreeDictionary(),alignment=0).set_height(int(100*self.ratio))
         self.board_dict_1._widget.setHeaderLabels(["Parameters Long","Value"])
         self.board_dict_1.add_parameter("Board Info/Name", value=" ", readonly=True, tip="Name of the digitizer in use.")
         self.board_dict_1.add_parameter("Board Info/ADC bits", value=" ", readonly=True, tip="Number of binary digits used to represent digital data from the digitizer.")
         self.board_dict_1.add_parameter("Board Info/ROC firmware", value=" ", readonly=True)
         self.board_dict_1.add_parameter("Board Info/Link", value=" ", readonly=True)
 
-        self.board_dict_2 = self.compass_tab.place_object(g.TreeDictionary(),alignment=0).set_height(100*self.ratio)
+        self.board_dict_2 = self.compass_tab.place_object(g.TreeDictionary(),alignment=0).set_height(int(100*self.ratio))
         self.board_dict_2._widget.setHeaderLabels(["Parameters Long","Value"])
         self.board_dict_2.add_parameter(" /ID", value=" ", readonly=True)
         self.board_dict_2.add_parameter(" /Sampling rate", value=None, type="float", readonly=True, suffix="S/s", siPrefix=True)
         self.board_dict_2.add_parameter(" /AMC firware", value=" ", readonly=True)
 
-        self.board_dict_3 = self.compass_tab.place_object(g.TreeDictionary(),alignment=0).set_height(100*self.ratio)
+        self.board_dict_3 = self.compass_tab.place_object(g.TreeDictionary(),alignment=0).set_height(int(100*self.ratio))
         self.board_dict_3._widget.setHeaderLabels(["Parameters Long","Value"])
         self.board_dict_3.add_parameter(" /Model", value=" ", readonly=True, tip="Model of the digitizer in use.")
         self.board_dict_3.add_parameter(" /DPP type", value=" ", readonly=True)
@@ -527,22 +527,22 @@ class GUIv2():
 
     def generate_graph_tab(self):
         grid_left = self.graph_tab.place_object(g.GridLayout(False), alignment=0)
-        grid_right = self.graph_tab.place_object(g.GridLayout(False), alignment=0).set_width(300*self.ratio)
+        grid_right = self.graph_tab.place_object(g.GridLayout(False), alignment=0).set_width(int(300*self.ratio))
 
         #Make some grids inside the right side grid.
-        grid_top = grid_right.place_object(g.GridLayout(False),1,1).set_height(50*self.ratio)
+        grid_top = grid_right.place_object(g.GridLayout(False),1,1).set_height(int(50*self.ratio))
         grid_bot = grid_right.place_object(g.GridLayout(False),1,2)
 
         #Make the line selection center:
-        self.line_selector = grid_top.place_object(g.ComboBox(items=list(self.lines.keys()))).set_width(195*self.ratio).set_height(45*self.ratio)
+        self.line_selector = grid_top.place_object(g.ComboBox(items=list(self.lines.keys()))).set_width(int(195*self.ratio)).set_height(int(45*self.ratio))
         self.line_selector._widget.setStyleSheet(self.dark_combo) if self.dark_theme_on else self.line_selector._widget.setStyleSheet(self.light_combo)
         self.line_selector.signal_changed.connect(self.change_line_highlight)
         
-        save_btn = grid_top.place_object(g.Button(" ")).set_height(45*self.ratio).set_width(45*self.ratio)
+        save_btn = grid_top.place_object(g.Button(" ")).set_height(int(45*self.ratio)).set_width(int(45*self.ratio))
         save_btn.set_style_unchecked(style="image: url(Images/save.png)")
         save_btn.signal_clicked.connect(self.save_changes)
 
-        delete_btn = grid_top.place_object(g.Button(" ")).set_height(45*self.ratio).set_width(45*self.ratio)
+        delete_btn = grid_top.place_object(g.Button(" ")).set_height(int(45*self.ratio)).set_width(int(45*self.ratio))
         delete_btn.set_style_unchecked(style="image: url(Images/delete.png)")
         delete_btn.signal_clicked.connect(self.delete)
 
@@ -557,7 +557,7 @@ class GUIv2():
 
 
         #Make the plotting region
-        self.inner_left = grid_left.place_object(g.GridLayout(False), alignment=0).set_width(40*self.ratio)
+        self.inner_left = grid_left.place_object(g.GridLayout(False), alignment=0).set_width(int(40*self.ratio))
         inner_right = grid_left.place_object(g.GridLayout(False), alignment=0)
         
         #Add the buttons for the different plots:
@@ -585,11 +585,11 @@ class GUIv2():
         self.mcs_btn = self.make_comp_btn(self.inner_left, "New MCS Graph", "Images/MCS Graph.png", column=1, row=8)
         self.mcs_btn.signal_toggled.connect(self.plot_selection)
 
-        self.snapshot_btn = self.inner_left.place_object(g.Button(" ", tip="Snapshot"), alignment=0, column=1, row=9).set_height(35*self.ratio).set_width(35*self.ratio)
+        self.snapshot_btn = self.inner_left.place_object(g.Button(" ", tip="Snapshot"), alignment=0, column=1, row=9).set_height(int(35*self.ratio)).set_width(int(35*self.ratio))
         self.snapshot_btn.set_style_unchecked(style="image: url(Images/SaveCompass.png)")
         self.snapshot_btn.signal_clicked.connect(self.save_snapshot)
 
-        self.plot_btn = self.inner_left.place_object(g.Button(" ", tip="Plot the graph/histogram selected above"), alignment=0, column=1, row=10).set_height(35*self.ratio).set_width(35*self.ratio)
+        self.plot_btn = self.inner_left.place_object(g.Button(" ", tip="Plot the graph/histogram selected above"), alignment=0, column=1, row=10).set_height(int(35*self.ratio)).set_width(int(35*self.ratio))
         self.plot_btn.set_style_unchecked(style="image: url(Images/PlotCompass.png)")
         self.plot_btn.signal_clicked.connect(self.plot_graphs)
 
@@ -605,7 +605,7 @@ class GUIv2():
     def make_plot_settings(self, parent):
         collapsible_grid_layout = g.GridLayout(False)
 
-        self.plot_settings_dict = collapsible_grid_layout.place_object(g.TreeDictionary(autosettings_path="GUIv2_plot_dict.txt"),alignment=0).set_width(275*self.ratio)
+        self.plot_settings_dict = collapsible_grid_layout.place_object(g.TreeDictionary(autosettings_path="GUIv2_plot_dict.txt"),alignment=0).set_width(int(275*self.ratio))
         self.plot_settings_dict._widget.setHeaderLabels(["Parameters slight long","Value"])
 
         self.plot_settings_dict.add_parameter("General Settings/Title", value=" ", tip="Title of the graph")
@@ -712,7 +712,7 @@ class GUIv2():
 
         button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
 
-        self.cpp_tof_btn = button_grid.place_object(g.Button("Calculate TOF", checkable=True)).set_width(240*self.ratio)
+        self.cpp_tof_btn = button_grid.place_object(g.Button("Calculate TOF", checkable=True)).set_width(int(240*self.ratio))
         self.cpp_tof_btn._widget.setStyleSheet(dark_theme) if self.dark_theme_on else self.cpp_tof_btn._widget.setStyleSheet(light_theme)
         self.roi_btn = self.make_channel_btn(button_grid, "SelectROI", 30, self.show_roi, tip="Show region selected by sliders")
         collapse_grid_layout.new_autorow()
@@ -724,17 +724,17 @@ class GUIv2():
         self.selection.change_combo(self.dark_combo) if self.dark_theme_on else self.selection.change_combo(self.light_combo)
         self.selection.show()
         
-        self.selection.set_height(30*self.ratio)
-        self.selection.set_width(240*self.ratio)
+        self.selection.set_height(int(30*self.ratio))
+        self.selection.set_width(int(240*self.ratio))
         collapse_grid_layout.new_autorow()
 
         #Start label
-        collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: ", 125*self.ratio))
+        collapse_grid_layout.place_object(IconLabel("Images/start.png","Start channel range: ", int(125*self.ratio)))
         collapse_grid_layout.new_autorow()
 
         self.start_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledDoubleRangeSlider(Horizontal))
-        self.start_range_hslider.setMinimumWidth(275*self.ratio)
-        self.start_range_hslider.setMinimumHeight(40*self.ratio)
+        self.start_range_hslider.setMinimumWidth(int(275*self.ratio))
+        self.start_range_hslider.setMinimumHeight(int(40*self.ratio))
         self.start_range_hslider.setStyleSheet(self.QSS_dark) if self.dark_theme_on else self.start_range_hslider.setStyleSheet(self.QSS_light)
         self.start_range_hslider.setValue((0,80))
         self.start_range_hslider.setRange(self.old_min,self.old_range)
@@ -744,12 +744,12 @@ class GUIv2():
         collapse_grid_layout.new_autorow()
 
         #Stop label
-        collapse_grid_layout.place_object(IconLabel("Images/stop.png","Stop channel range: ", 125*self.ratio))
+        collapse_grid_layout.place_object(IconLabel("Images/stop.png","Stop channel range: ", int(125*self.ratio)))
         collapse_grid_layout.new_autorow()
 
         self.stop_range_hslider = collapse_grid_layout.place_object(superqt.QLabeledDoubleRangeSlider(Horizontal))
-        self.stop_range_hslider.setMinimumWidth(275*self.ratio)
-        self.stop_range_hslider.setMinimumHeight(40*self.ratio)
+        self.stop_range_hslider.setMinimumWidth(int(275*self.ratio))
+        self.stop_range_hslider.setMinimumHeight(int(40*self.ratio))
         self.stop_range_hslider.setStyleSheet(self.QSS_dark) if self.dark_theme_on else self.stop_range_hslider.setStyleSheet(self.QSS_light)
         self.stop_range_hslider.setValue((0,80))
         self.stop_range_hslider.setRange(self.old_min,self.old_range)
@@ -759,7 +759,7 @@ class GUIv2():
         collapse_grid_layout.new_autorow()
 
         #Window label
-        collapse_grid_layout.place_object(IconLabel("Images/time.png","Window time: ",75*self.ratio))
+        collapse_grid_layout.place_object(IconLabel("Images/time.png","Window time: ",int(75*self.ratio)))
 
         self.time_range = collapse_grid_layout.place_object(superqt.QQuantity("10us"))
         self.time_range.setDecimals(2)
@@ -768,7 +768,7 @@ class GUIv2():
         collapse_grid_layout.new_autorow()
 
         start_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0,column_span=2)
-        start_button_grid.place_object(IconLabel("Images/start.png","Start channel: ", 75*self.ratio))
+        start_button_grid.place_object(IconLabel("Images/start.png","Start channel: ", int(75*self.ratio)))
 
         self.ch0_start_btn = self.make_channel_btn(start_button_grid, "0", 30, self.start_channel_toggling)
         self.ch1_start_btn = self.make_channel_btn(start_button_grid, "1", 30, self.start_channel_toggling)
@@ -776,11 +776,11 @@ class GUIv2():
         self.ch3_start_btn = self.make_channel_btn(start_button_grid, "3", 30, self.start_channel_toggling)
 
         collapse_grid_layout.new_autorow()
-        collapse_grid_layout.place_object(Seperator(125*self.ratio, 100*self.ratio, left=113*self.ratio, right=37*self.ratio),column_span=2)
+        collapse_grid_layout.place_object(Seperator(int(125*self.ratio), int(100*self.ratio), left=int(113*self.ratio), right=int(37*self.ratio)),column_span=2)
         collapse_grid_layout.new_autorow()
 
         stop_button_grid = collapse_grid_layout.place_object(g.GridLayout(False), alignment=0, column_span=2)
-        stop_button_grid.place_object(IconLabel("Images/stop.png","Stop channel:  ", 75*self.ratio))
+        stop_button_grid.place_object(IconLabel("Images/stop.png","Stop channel:  ", int(75*self.ratio)))
 
         self.ch0_stop_btn = self.make_channel_btn(stop_button_grid, "0", 30, self.stop_channel_toggling)
         self.ch1_stop_btn = self.make_channel_btn(stop_button_grid, "1", 30, self.stop_channel_toggling)
@@ -809,14 +809,14 @@ class GUIv2():
         
 
     def make_comp_btn(self, parent, tip_text, url_image, **kwargs):
-        btn = parent.place_object(g.Button(" ", checkable=True, tip=tip_text), alignment=0, **kwargs).set_height(35*self.ratio).set_width(35*self.ratio)
+        btn = parent.place_object(g.Button(" ", checkable=True, tip=tip_text), alignment=0, **kwargs).set_height(int(35*self.ratio)).set_width(int(35*self.ratio))
         btn.set_style_checked(style=f"image: url({url_image}); border: 2px solid rgb(1,196,255); background: rgb(54,54,54)") if self.dark_theme_on else btn.set_style_checked(style=f"image: url({url_image}); border: 2px solid rgb(1,196,255); background: rgb(220,220,220)") 
         btn.set_style_unchecked(style=f"image: url({url_image})")
         return btn
 
     def make_channel_btn(self, parent, channel_number, size, function, tip: str=None, off: str=None, on:str=None, disabled:str=None):
         tip = f"Channel {channel_number}" if tip is None else tip
-        button = parent.place_object(g.Button(" ", True, tip=tip)).set_width(size*self.ratio).set_height(size*self.ratio)
+        button = parent.place_object(g.Button(" ", True, tip=tip)).set_width(int(size*self.ratio)).set_height(int(size*self.ratio))
 
         off = "Off" if off is None else off
         on = "On" if on is None else on
@@ -858,7 +858,7 @@ class GUIv2():
     def make_comp_settings_tab(self, parent_tab, tab_type):
         grid = parent_tab.place_object(g.GridLayout(False), alignment=0)
         grid.place_object(g.Label("Channel :"))
-        channel_selector = grid.place_object(g.ComboBox(items=["BOARD","CH0","CH1","CH2","CH3"])).set_width(1200*self.ratio)
+        channel_selector = grid.place_object(g.ComboBox(items=["BOARD","CH0","CH1","CH2","CH3"])).set_width(int(1200*self.ratio))
         channel_selector._widget.setStyleSheet(self.dark_combo) if self.dark_theme_on else channel_selector._widget.setStyleSheet(self.light_combo)
         grid.new_autorow()
         tree_dict = grid.place_object(g.TreeDictionary(), alignment=0, column_span=2)
