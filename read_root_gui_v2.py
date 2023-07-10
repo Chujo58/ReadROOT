@@ -207,6 +207,7 @@ def removeItem(combo_box: g.ComboBox, name: str):
 
 class GUIv2():
     def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True, dark_theme: bool = None, compress: bool = True):
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
         self.ratio = float(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
         self.dark_theme_on = dd.isDark() if dark_theme is None else dark_theme
         Converter.compress = compress

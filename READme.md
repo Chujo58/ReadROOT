@@ -2,7 +2,7 @@
 
 **Current version date :** 2022/12/02
 
-**Version =** 2.2.5
+**Version =** 2.2.6
 
 **install**
 
