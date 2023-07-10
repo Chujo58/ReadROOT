@@ -1,4 +1,5 @@
 import os, sys, matplotlib, json, difflib
+running_directory = os.getcwd() #This is to make the relative import work!
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
 sys.path.append(path) #FOR C++ TO WORK!
@@ -76,4 +77,5 @@ def do_config():
 
 if info.get("LoadConfig"):
     do_config()
-    
+
+os.chdir(running_directory)
