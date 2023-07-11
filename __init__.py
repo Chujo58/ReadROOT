@@ -9,6 +9,7 @@ from . import read_root_gui
 from . import read_root_gui_v2
 from . import IOClasses
 from . import QtClasses
+from . import root_plotter
 
 reader = read_root._root_reader
 reader_v2 = read_root.root_reader_v2
@@ -17,6 +18,7 @@ guiv2 = read_root_gui_v2.GUIv2
 fileexp = IOClasses.FileExplorer
 config = IOClasses.Configuration
 setup = IOClasses.SetUpCpp
+plotter = root_plotter.RootPlotter
 
 #Make the colormaps:
 white_turbo_list = [

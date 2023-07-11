@@ -1150,6 +1150,7 @@ class GUIv2():
     def save_changes(self, *a):
         line_selected = self.line_selector.get_text()
         file_selected = self.selection.get_text()
+        cuts_on = False
         if len(file_selected.split("_")) > 3:
             cuts_on = True
 
@@ -1370,6 +1371,7 @@ class GUIv2():
 
     def plot_2dhist(self, data, button: str):
         file_selected = self.selection.get_text()
+        cuts_on = False
         if len(file_selected.split("_")) > 3:
             cuts_on = True
         pen_data = None

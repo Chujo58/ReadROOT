@@ -198,18 +198,6 @@ class XMLParser:
                 break
         else: # I'm a genius. Don't mind me using disgusting functions in python.
             label = "CH" #This is executed if the loop ends normally (so without encountering the break above.)
-        # keys = channel_to_check.findall('values/entry/key')
-        # values = channel_to_check.findall('values/entry/value')
-        # if len(keys) == 0 and len(values) == 0:
-        #     label = "CH"
-        # for indexes, key in enumerate(keys):
-        #     print(key.text)
-        #     if key.text == "SW_PARAMETER_CH_LABEL":
-        #         label = values[indexes].text
-        #         break
-        #     else:
-        #         label = "CH"
-        # label = channel_to_check.find('values/entry/value').text if channel_to_check.find('values/entry/value') is not None else self.parameters['MISC']['SW_PARAMETER_CH_LABEL']
         return (index, label)
 
 
