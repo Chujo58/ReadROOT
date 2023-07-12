@@ -804,9 +804,10 @@ class GUIv2():
         if os.path.isdir(os.path.join(self.complete_path,"TOF Data")):
             items_to_add = list(os.listdir(os.path.join(self.complete_path,"TOF Data")))
             for item in items_to_add:
-                split_item = item.split("_")[1:]
-                to_add = "_".join(split_item)
-                self.selection.add_item(to_add)
+                if item.endswith(".csv"):
+                    split_item = item.split("_")[1:]
+                    to_add = "_".join(split_item)
+                    self.selection.add_item(to_add)
         
 
     def make_comp_btn(self, parent, tip_text, url_image, **kwargs):
