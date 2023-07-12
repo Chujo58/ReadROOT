@@ -68,12 +68,6 @@ class RootPlotter():
         plt.setp(self.axHistx.get_xticklabels(), visible=False)
         plt.setp(self.axHisty.get_yticklabels(), visible=False)
 
-        self.axScatter.set_xlabel("Start Energy")
-        self.axScatter.set_ylabel("Stop Energy")
-
-        self.axHistx.set_ylabel("Energy counts")
-        self.axHisty.set_xlabel("Energy counts")
-
         self.axScatter.set_xlim(0,bins)
         self.axScatter.set_ylim(0,bins)    
 
@@ -86,6 +80,25 @@ class RootPlotter():
             Title of the graph
         """
         plt.suptitle(title)   
+
+    def set_labels(self, x_label: str, y_label: str, hist_x: str, hist_y: str) -> None:
+        """Sets the labels of the graph.
+
+        Parameters
+        ----------
+        x_label : str
+            2D histogram x label
+        y_label : str
+            2D histogram y label
+        hist_x : str
+            X axis histogram label
+        hist_y : str
+            Y axis histogram label
+        """
+        self.axScatter.set_xlabel(x_label)
+        self.axScatter.set_ylabel(y_label)
+        self.axHistx.set_ylabel(hist_x)
+        self.axHisty.set_xlabel(hist_y)
 
     def show(self):
         """Shows the graph.
