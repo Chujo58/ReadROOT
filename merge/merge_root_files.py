@@ -34,9 +34,9 @@ class Merger(QtCore.QObject):
 
     Parameters
     ----------
-    file_ch0 : Path
+    stop_file : Path
         Root file containing the stop events
-    file_ch1 : Path
+    start_file : Path
         Root file containing the start events
     window : U64, optional
         Maximum time for the events to coincide, by default 0
@@ -47,10 +47,10 @@ class Merger(QtCore.QObject):
     unfilter_data = False
     finished = QtCore.pyqtSignal(list)
 
-    def __init__(self, file_ch0: Path, file_ch1: Path, window: U64 = 0, tree: str = "Data_R") -> None:
+    def __init__(self, stop_file: Path, start_file: Path, window: U64 = 0, tree: str = "Data_R") -> None:
         super(Merger, self).__init__()
-        self.file_ch0__: Path = file_ch0
-        self.file_ch1__: Path = file_ch1
+        self.file_ch0__: Path = stop_file
+        self.file_ch1__: Path = start_file
         self.window : U64 = window
         self.tree = tree
         self.cuts = {0:[],1:[]}
@@ -99,7 +99,7 @@ class Merger(QtCore.QObject):
         t1 = next(iter_t1) 
         e1 = next(iter_e1)
         while t0 != 0 and t1 != 0:
-            delta, sign = uint64_diff(t0, t1)
+            delta, sign = uint64_diff(t0, t1) # Doing t0-t1
             if delta <= threshold:
                 result.append(ConsolidatedData(t0, t1, e0, e1))
                 
