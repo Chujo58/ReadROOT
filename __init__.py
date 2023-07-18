@@ -61,6 +61,7 @@ with open("config.json", "r") as f:
     info = json.load(f)
 
 def do_config():
+    os.chdir(path)
     init()
     cprint("Available configurations: ", "cyan", attrs=["bold"])
     keys_to_print = [key for key in info.keys() if key != "LoadConfig"]
@@ -76,6 +77,7 @@ def do_config():
 
     cprint("Configuration set!", "cyan", attrs=["bold"])
     configuration.config_done()
+    os.chdir(running_directory)
 
 if info.get("LoadConfig"):
     do_config()
