@@ -94,7 +94,11 @@ class CheckFiles(QtCore.QObject):
 
     def start(self):
         for index, (key, file) in enumerate(self.files):
-            root = read_root.root_reader_v2(os.path.join(*self.gen_path, file), self.tree)
+            path = os.path.join(*self.gen_path, file)
+            root = read_root.root_reader_v2(path, self.tree)
+            if os.stat(path).st_size/(1024*1024) >= 20:
+                self.progress.emit([int(key),True])
+                continue
             data = root.open()
             if data is None:
                 self.progress.emit([int(key),False])
