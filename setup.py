@@ -1,4 +1,4 @@
-__version__ = "2.3.10"
+__version__ = "2.3.11"
 
 from setuptools import setup
 
@@ -47,7 +47,8 @@ setup(
         "colorama",
         "termcolor",
         "cppimport",
-        "mpl_scatter_density"
+        "mpl_scatter_density",
+        "rich"
     ],
     include_package_data= True,
     python_requires = ">3.11"

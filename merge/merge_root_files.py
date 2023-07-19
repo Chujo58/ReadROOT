@@ -2,6 +2,7 @@
 import uproot
 import numpy as np
 import pandas as pd
+import rich.progress
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -76,20 +77,13 @@ class Merger(QtCore.QObject):
         else:
             filtered_root_file0 = unfiltered_root_file0
             filtered_root_file1 = unfiltered_root_file1       
-        
-
-        # idx0: int = 0
-        # idx1: int = 0
-        # idx_max0: int = len(filtered_data0['Timestamp']) 
-        # idx_max1: int = len(filtered_data1['Timestamp']) 
-        # print(filtered_data0["Timestamp"])         
-        # print(filtered_data1["Timestamp"]) 
-               
+    
+        length = len(filtered_root_file0["Energy"])           
         result: list[ConsolidatedData] = []
         
         delta: U64
         threshold: U64 = self.window
-        iter_t0 = np.nditer(filtered_root_file0["Timestamp"])
+        iter_t0 = np.nditer(filtered_root_file0["Timestamp"],flags=["f_index"])
         iter_e0 = np.nditer(filtered_root_file0["Energy"])
         iter_t1 = np.nditer(filtered_root_file1["Timestamp"])
         iter_e1 = np.nditer(filtered_root_file1["Energy"])
@@ -98,23 +92,42 @@ class Merger(QtCore.QObject):
         e0 = next(iter_e0)
         t1 = next(iter_t1) 
         e1 = next(iter_e1)
-        while t0 != 0 and t1 != 0:
-            delta, sign = uint64_diff(t0, t1) # Doing t0-t1
-            if delta <= threshold:
-                result.append(ConsolidatedData(t0, t1, e0, e1))
-                
-                t0 = next(iter_t0, 0)
-                e0 = next(iter_e0, 0)
-                
-                t1 = next(iter_t1, 0) 
-                e1 = next(iter_e1, 0)
-            elif sign < 0:
-                t0 = next(iter_t0, 0)
-                e0 = next(iter_e0, 0)
-            elif sign > 0:
-                t1 = next(iter_t1, 0) 
-                e1 = next(iter_e1, 0)
-                
+        
+        with rich.progress.Progress(
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            rich.progress.BarColumn(),
+            rich.progress.DownloadColumn(),
+            "•",
+            rich.progress.TimeRemainingColumn(
+                compact=True,
+                elapsed_when_finished=True
+            ),
+            "•",
+            rich.progress.TransferSpeedColumn(),
+            "•",
+            rich.progress.SpinnerColumn(finished_text="✔")
+        ) as progress:
+            task_id = progress.add_task("", total=length)
+            while t0 != 0 and t1 != 0:
+                progress.update(task_id, completed=iter_t0.index)
+                delta, sign = uint64_diff(t0, t1) # Doing t0-t1
+                if delta <= threshold:
+                    result.append(ConsolidatedData(t0, t1, e0, e1))
+                    
+                    t0 = next(iter_t0, 0)
+                    e0 = next(iter_e0, 0)
+                    
+                    t1 = next(iter_t1, 0) 
+                    e1 = next(iter_e1, 0)
+                elif sign < 0:
+                    t0 = next(iter_t0, 0)
+                    e0 = next(iter_e0, 0)
+                elif sign > 0:
+                    t1 = next(iter_t1, 0) 
+                    e1 = next(iter_e1, 0)
+
+            progress.update(task_id, completed=length)
+                    
         # print("result len:", len(result))
         self.finished.emit(result)
         return result

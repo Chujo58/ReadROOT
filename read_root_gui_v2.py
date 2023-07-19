@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
 # Current version date : 2023/05
-# Version = 2.3.10
+# Version = 2.3.11
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -404,10 +404,13 @@ class GUIv2():
         if show: window.show(block)
     
     def get_screen_resolution(self):
-        #Works only for windows
-        user32 = ct.windll.user32
-        user32.SetProcessDPIAware()
-        return int(user32.GetSystemMetrics(0)), int(user32.GetSystemMetrics(1))
+        if sys.platform.startswith("win"):
+            #Works only for windows
+            user32 = ct.windll.user32
+            user32.SetProcessDPIAware()
+            return int(user32.GetSystemMetrics(0)), int(user32.GetSystemMetrics(1))
+        else:
+            return (1680,1050)
 
     def generate_top_grid(self):
         #For the channel buttons:
