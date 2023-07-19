@@ -57,12 +57,13 @@ matplotlib.colormaps.register(black_turbo)
 from colorama import init
 from termcolor import cprint
 
-with open("config.json", "r") as f:
-    info = json.load(f)
+
 
 def do_config():
     os.chdir(path)
     init()
+    with open("config.json", "r") as f:
+        info = json.load(f)
     cprint("Available configurations: ", "cyan", attrs=["bold"])
     keys_to_print = [key for key in info.keys() if key != "LoadConfig"]
     for index, key in enumerate(keys_to_print):
@@ -78,6 +79,15 @@ def do_config():
     cprint("Configuration set!", "cyan", attrs=["bold"])
     configuration.config_done()
     os.chdir(running_directory)
+
+def add_config(name: str):
+    os.chdir(path)
+    new_configuration = config(name, "config.json")
+    new_configuration.find_required_headers(autosave=True)
+    os.chdir(running_directory)
+
+with open("config.json", "r") as f:
+    info = json.load(f)
 
 if info.get("LoadConfig"):
     do_config()
