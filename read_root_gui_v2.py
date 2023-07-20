@@ -1220,6 +1220,12 @@ class GUIv2():
                     string_to_edit = file_selected.split("_")[-1][1:-5].split(",")
                     start_channel_cut = [float(item) for item in string_to_edit[0][1:-1].split("-")]
                     stop_channel_cut = [float(item) for item in string_to_edit[1][2:-1].split("-")]
+                    if len(start_channel_cut) != 2:
+                        self.logs.add_log("Did you properly name your `.csv` file?")
+                        return
+                    if len(stop_channel_cut) != 2:
+                        self.logs.add_log("Did you properly name your `.csv` file?")
+                        return
                     x_scale = (start_channel_cut[1] - start_channel_cut[0])/old_x
                     y_scale = (stop_channel_cut[1] - stop_channel_cut[0])/old_y
 
@@ -1398,6 +1404,12 @@ class GUIv2():
                 string_to_edit = file_selected.split("_")[-1][1:-5].split(",")
                 start_channel_cut = [float(item) for item in string_to_edit[0][1:-1].split("-")]
                 stop_channel_cut = [float(item) for item in string_to_edit[1][2:-1].split("-")]
+                if len(start_channel_cut) != 2:
+                    self.logs.add_log("Did you properly name your `.csv` file?")
+                    return
+                if len(stop_channel_cut) != 2:
+                    self.logs.add_log("Did you properly name your `.csv` file?")
+                    return
                 x_scale = (start_channel_cut[1] - start_channel_cut[0])/old_x
                 y_scale = (stop_channel_cut[1] - stop_channel_cut[0])/old_y
 
@@ -1459,6 +1471,12 @@ class GUIv2():
         if not self.selection.is_checked():
             start_btn = self.what_btn_is_checked(self.start_buttons_list)
             stop_btn = self.what_btn_is_checked(self.stop_buttons_list)
+            if start_btn is None:
+                self.logs.add_log("Did you select a start channel for the TOF?")
+                return
+            if stop_btn is None:
+                self.logs.add_log("Did you select a stop channel for the TOF?")
+                return
             
             time_window_magnitude = int(self.time_range.value().to("picosecond").magnitude)
             time_window_quantity = self.time_range.value()
