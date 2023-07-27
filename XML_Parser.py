@@ -194,8 +194,9 @@ class XMLParser:
         entries = channel_to_check.findall('values/entry')
         for entry in entries:
             if entry.find('key').text == "SW_PARAMETER_CH_LABEL":
-                label = entry.find('value').text
-                break
+                if entry.find('value') is not None:
+                    label = entry.find('value').text
+                    break
         else: # I'm a genius. Don't mind me using disgusting functions in python.
             label = "CH" #This is executed if the loop ends normally (so without encountering the break above.)
         return (index, label)
