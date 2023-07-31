@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
 # Current version date : 2023/07/31
-# Version = 2.3.14
+# Version = 2.3.15
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -48,6 +48,7 @@ import pyqtgraph.exporters as export
 import darkdetect as dd
 from PyQt5 import QtGui, QtCore
 import superqt, datetime
+import pyautogui as p
 #----------------------------------------------------------------------------
 
 g = egg.gui
@@ -404,13 +405,8 @@ class GUIv2():
         if show: window.show(block)
     
     def get_screen_resolution(self):
-        if sys.platform.startswith("win"):
-            #Works only for Windows since we are working with dll.
-            user32 = ct.windll.user32
-            user32.SetProcessDPIAware()
-            return int(user32.GetSystemMetrics(0)), int(user32.GetSystemMetrics(1))
-        else:
-            return (1680,1050)
+        screen_size = p.size()
+        return (screen_size.width, screen_size.height)
 
     def get_scale_factor(self):
         if sys.platform.startswith("win"):
