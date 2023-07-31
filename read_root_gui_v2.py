@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
-# Current version date : 2023/07/27
-# Version = 2.3.13
+# Current version date : 2023/07/31
+# Version = 2.3.14
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -208,7 +208,7 @@ def removeItem(combo_box: g.ComboBox, name: str):
 class GUIv2():
     def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True, dark_theme: bool = None, compress: bool = True):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
-        self.ratio = float(ct.windll.shcore.GetScaleFactorForDevice(0)/100) if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
+        self.ratio = self.get_scale_factor() if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
         self.dark_theme_on = dd.isDark() if dark_theme is None else dark_theme
         Converter.compress = compress
         self.colormap = pg.colormap.getFromMatplotlib("black_turbo") if self.dark_theme_on else pg.colormap.getFromMatplotlib("white_turbo")
@@ -405,12 +405,19 @@ class GUIv2():
     
     def get_screen_resolution(self):
         if sys.platform.startswith("win"):
-            #Works only for windows
+            #Works only for Windows since we are working with dll.
             user32 = ct.windll.user32
             user32.SetProcessDPIAware()
             return int(user32.GetSystemMetrics(0)), int(user32.GetSystemMetrics(1))
         else:
             return (1680,1050)
+
+    def get_scale_factor(self):
+        if sys.platform.startswith("win"):
+            #Works only for Windows since we are working with dll.
+            return float(ct.windll.shcore.GetScaleFactorForDevice(0)/100)
+        else:
+            return 1
 
     def generate_top_grid(self):
         #For the channel buttons:
