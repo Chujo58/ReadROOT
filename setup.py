@@ -1,4 +1,4 @@
-__version__ = "2.3.15"
+__version__ = "2.3.16"
 
 from setuptools import setup
 
@@ -48,7 +48,7 @@ setup(
         "termcolor",
         "cppimport",
         "mpl_scatter_density",
-        "rich"
+        "rich",
         "pyautogui"
     ],
     include_package_data= True,
