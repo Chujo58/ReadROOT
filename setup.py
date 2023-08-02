@@ -1,12 +1,15 @@
-__version__ = "2.3.17"
+__version__ = "2.3.19"
 
 from setuptools import setup
+
+description = open("READme.md").read()
 
 setup(
     name = "ReadROOT",
     version = __version__,
     description = "Easy GUI made to read ROOT files created by the CoMPASS software distribued by CAEN.",
-    long_description = "ReadROOT is an easy GUI made to read ROOT files created by the CoMPASS software distributed by CAEN. This GUI will also allow the user to plot the different graphs from the CoMPASS software.",
+    long_description = description,
+    long_description_content_type = "text/markdown",
     author = "Chloé Legué",
     author_email= "chloe.legue@mail.mcgill.ca",
     url = "https://github.com/Chujo58/ReadROOT",

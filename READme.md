@@ -1,33 +1,39 @@
-**Created by :** Chloé Legué
+**Created by :** Chloe Legue
 
 **Current version date :** 2023/08/02
 
-**Version =** 2.3.17
+**Version =** 2.3.19
 
-**install**
+ReadROOT is an easy GUI made to read ROOT files created by the CoMPASS software distributed by CAEN. This GUI will also allow the user to plot the different graphs from the CoMPASS software.
 
-1. Create a virtual environment (replace *env_name* with the name of your choice)
+# How to install ReadROOT
 
-   ```bash
-   python3 -m venv env_name
-   ```
-2. Activate the environment
+The ReadROOT package is currently on PyPi. This means it can be installed via a `pip` install.
 
-   ```bash
-   source env_name/bin/activate
-   ```
-3. Install dependencies
+## Create a virtual environment with Anaconda
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+Using Anaconda, creating a virtual environment is an easy task:
 
-**Install with conda or normal Python distribution**
+```
+conda create --name new_env python==3.11.3
+```
 
-The installation process is described in the wiki of this Github repository. You can also find more information about how to use the different functions of this package in the wiki. Here is the link to the [installation](https://github.com/Chujo58/ReadROOT/wiki).
+This line above will create a `Python` environment with the 3.11.3 update of `Python`. Some extra instructions need to be followed in the Anaconda terminal before the virtual environment is finalized. This is the version that was used to create this package, so it is better to use it.
 
-**Use of this code**
+## Activating and downloading the package
 
-This code was made for the coincidence experiment at McGill University. The code allows the user to choose a folder containing the results saved from the CoMPASS software made by CAEN. This code should be used with the CAEN DT5751 or with any other digitizer that uses CoMPASS to save files. This code can reproduce all the different plots and histograms that the CoMPASS software can. Do note that 2D histograms might take longer to render or may simply lag the GUI. If this does happen, the graphics can be manually replotted. If the TOF histograms (or graphs that need the TOF data) lag the GUI, there are also ways to run the analysis manually to avoid problems.
+Once the virtual environment is created, it can be easily activated using `conda activate new_env`. From this point on, Anaconda will consider you are using the `new_env` environment which runs `Python` 3.11.3.
 
-Please refer to the Wiki to know how to use GUI properly.
+To download the ReadROOT package, the following command can be sent:
+
+```
+pip install ReadROOT
+```
+
+This will install the latest version of ReadROOT posted on PyPi. After all dependencies are installed, ReadROOT will be installed in your environment. To know more about the GUI and other functionalities of ReadROOT, you can navigate in this Wiki to find more information.
+
+## Modifying some files
+
+> This is no longer necessary if the newer `Merger` is used. The old C++ code was made for the previous Root Reader version.
+
+In order for the time of flight (TOF) functions to work, C++ was used (Python was too slow). C++ needs very specific header files and the complete path to those files is needed. The two files that have those headers are `wrap.cpp` and `funcs.hpp`. If an error shows up when ReadROOT is imported (something along the lines of C++ not being able to find a header file) then verify those two.
