@@ -15,3 +15,6 @@ pint
 colorama
 termcolor
 cppimport
+mpl_scatter_density
+rich
+pyautogui

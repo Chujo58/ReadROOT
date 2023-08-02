@@ -1,4 +1,4 @@
-__version__ = "2.3.16"
+__version__ = "2.3.17"
 
 from setuptools import setup
 
@@ -52,5 +52,5 @@ setup(
         "pyautogui"
     ],
     include_package_data= True,
-    python_requires = ">3.11"
+    python_requires = ">=3.11"
 )
