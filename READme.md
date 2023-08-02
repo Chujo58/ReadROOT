@@ -22,20 +22,12 @@
    pip install -r requirements.txt
    ```
 
-This code was made for the coincidence experiment at McGill University. The code allows the user to choose a folder containing the results saved from the CoMPASS software made by CAEN. This code should be used with the CAEN DT5751 or with any other digitizer that uses CoMPASS to save files. This code is also capable of reproducing most of the graphics made by the CoMPASS Plot:
+**Install with conda or normal Python distribution**
 
-* Energy Histogram
-* PSD Histogram
-* Time Histogram
-* TOF Histogram
-* MCS Graph
+The installation process is described in the wiki of this Github repository. You can also find more information about how to use the different functions of this package in the wiki. Here is the link to the [installation](https://github.com/Chujo58/ReadROOT/wiki).
 
-Other graphs are not available at the moment. Do note that the log mode is not working at the moment and will be fixed at a later date.
+**Use of this code**
 
-**Update Log**
-
-- Added GUI 2.0 (Recolor and rework of the first version)
-- Changed the icons for the CoMPASS tabs.
-- Added the remaining 2D histograms. Need to be coded.
+This code was made for the coincidence experiment at McGill University. The code allows the user to choose a folder containing the results saved from the CoMPASS software made by CAEN. This code should be used with the CAEN DT5751 or with any other digitizer that uses CoMPASS to save files. This code can reproduce all the different plots and histograms that the CoMPASS software can. Do note that 2D histograms might take longer to render or may simply lag the GUI. If this does happen, the graphics can be manually replotted. If the TOF histograms (or graphs that need the TOF data) lag the GUI, there are also ways to run the analysis manually to avoid problems.
 
 Please refer to the Wiki to know how to use GUI properly.
