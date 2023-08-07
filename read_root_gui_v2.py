@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
-# Current version date : 2023/08/02
-# Version = 2.3.20
+# Current version date : 2023/08/07
+# Version = 2.4.0
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -225,8 +225,9 @@ class GUIv2():
         window = g.Window(name, size=[width, height], autosettings_path=name+"_window.txt")
         window._window.setWindowIcon(QtGui.QIcon("Images/CoMPASS/icon64x64.png"))
 
-        myappid = 'mycompany.myproduct.subproduct.version' # arbitrary string
-        ct.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        if sys.platform.startswith("win"): #This will set the 
+            myappid = 'mycompany.myproduct.subproduct.version' # arbitrary string
+            ct.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
         self.TopGrid = window.place_object(g.GridLayout(True)).set_height(int(52*self.ratio))#.set_width(1273*self.ratio)
         window.new_autorow()

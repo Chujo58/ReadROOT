@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QWidget
 from spinmob.egg import gui as g
 import datetime, os, superqt
 import read_root
+from playsound import playsound
 
 class bcolors:
     HEADER = '\033[95m'
@@ -311,6 +312,7 @@ class Logger(QtCore.QObject):
         if log_type == None:
             self.text.add_text(formatted_log_message)
 
+        playsound("discord.mp3")
 
 
 

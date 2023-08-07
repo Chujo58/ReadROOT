@@ -1,4 +1,4 @@
-__version__ = "2.3.20"
+__version__ = "2.4.0"
 
 from setuptools import setup
 
@@ -29,7 +29,8 @@ setup(
             "./funcs.hpp",
             "./funcs.cpp",
             "./wrap.cpp",
-            "./config.json"
+            "./config.json",
+            "./discord.mp3"
         ]
     },
     install_requires = [
@@ -52,7 +53,8 @@ setup(
         "cppimport",
         "mpl_scatter_density",
         "rich",
-        "pyautogui"
+        "pyautogui",
+        "playsound==1.2.2"
     ],
     include_package_data= True,
     python_requires = ">=3.11"
