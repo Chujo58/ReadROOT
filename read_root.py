@@ -1,10 +1,10 @@
 import numpy
 import sys
-import matplotlib.pyplot as _plt
-import uproot as _ur
+import matplotlib.pyplot as _plt #type: ignore
+import uproot as _ur #type: ignore
 import pandas
 import tkinter.filedialog as _fd
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit #type: ignore
 import pint
 
 import os as _os
@@ -364,7 +364,7 @@ class _root_reader():
         return (x, y, delta_time)
 
     def __CPPTOF__(self, file1, file2, low_cut_0, high_cut_0, low_cut_1, high_cut_1, window, min_bin, max_bin, default_bins=8192, default_bin_size=0.045, tree="Data_R"):
-        import cppimport
+        import cppimport #type: ignore
         try:
             lib = cppimport.imp("wrap")
         except:

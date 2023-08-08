@@ -1,4 +1,4 @@
-__version__ = "2.4.1"
+__version__ = "2.4.2"
 
 from setuptools import setup
 
@@ -12,7 +12,10 @@ setup(
     long_description_content_type = "text/markdown",
     author = "Chloé Legué",
     author_email= "chloe.legue@mail.mcgill.ca",
-    url = "https://github.com/Chujo58/ReadROOT",
+    project_urls = {
+        "Repository" : "https://github.com/Chujo58/ReadROOT",
+        "Documentation" : "https://github.com/Chujo58/ReadROOT/wiki"
+    },
     packages= [
         "ReadROOT",
         "ReadROOT.merge"

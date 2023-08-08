@@ -1,7 +1,7 @@
 import typing
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtWidgets import QWidget
-from spinmob.egg import gui as g
+from spinmob.egg import gui as g #type: ignore
 import datetime, os, superqt
 import read_root
 from playsound import playsound

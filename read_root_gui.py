@@ -16,9 +16,9 @@ import os as _os
 import sys as _sys
 #----------------------------------------------------------------------------
 # Other imports 
-from . import read_root
+from .test import read_root
 _root_reader = read_root._root_reader
-from . import XML_Parser
+from .test import XML_Parser
 #XML_Parser import InfoParser, XMLParser
 InfoParser = XML_Parser.InfoParser
 XMLParser = XML_Parser.XMLParser
@@ -36,7 +36,7 @@ import re as _re
 from PyQt5 import QtGui, QtWidgets
 import time
 from scipy.optimize import curve_fit as _cf
-from . import ErrorPropagation
+from .test import ErrorPropagation
 _uf = ErrorPropagation.UFloat
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib import cm

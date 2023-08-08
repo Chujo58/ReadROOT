@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
 # Current version date : 2023/08/08
-# Version = 2.4.1
+# Version = 2.4.2
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -38,14 +38,14 @@ Merger.unfilter_data = True
 Converter = merge.Converter
 #----------------------------------------------------------------------------
 # General libraries imports
-import spinmob as s
-import spinmob.egg as egg
+import spinmob as s #type: ignore
+import spinmob.egg as egg #type: ignore
 import numpy as np
 import tkinter.filedialog as fd
-import pyqtgraph as pg
+import pyqtgraph as pg #type: ignore
 import ctypes as ct
-import pyqtgraph.exporters as export
-import darkdetect as dd
+import pyqtgraph.exporters as export #type: ignore
+import darkdetect as dd #type: ignore
 from PyQt5 import QtGui, QtCore
 import superqt, datetime
 import pyautogui as p
@@ -821,13 +821,13 @@ class GUIv2():
                     self.selection.add_item(to_add)
         
 
-    def make_comp_btn(self, parent, tip_text, url_image, **kwargs):
+    def make_comp_btn(self, parent, tip_text: str, url_image: str, **kwargs):
         btn = parent.place_object(g.Button(" ", checkable=True, tip=tip_text), alignment=0, **kwargs).set_height(int(35*self.ratio)).set_width(int(35*self.ratio))
         btn.set_style_checked(style=f"image: url({url_image}); border: 2px solid rgb(1,196,255); background: rgb(54,54,54)") if self.dark_theme_on else btn.set_style_checked(style=f"image: url({url_image}); border: 2px solid rgb(1,196,255); background: rgb(220,220,220)") 
         btn.set_style_unchecked(style=f"image: url({url_image})")
         return btn
 
-    def make_channel_btn(self, parent, channel_number, size, function, tip: str=None, off: str=None, on:str=None, disabled:str=None):
+    def make_channel_btn(self, parent, channel_number: int, size: int, function: callable, tip: str=None, off: str=None, on:str=None, disabled:str=None):
         tip = f"Channel {channel_number}" if tip is None else tip
         button = parent.place_object(g.Button(" ", True, tip=tip)).set_width(int(size*self.ratio)).set_height(int(size*self.ratio))
 

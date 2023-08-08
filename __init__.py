@@ -1,10 +1,10 @@
-import os, sys, matplotlib, json, difflib
+import os, sys, matplotlib, json, difflib #type: ignore
 running_directory = os.getcwd() #This is to make the relative import work!
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
 sys.path.append(path) #FOR C++ TO WORK!
 
-__version__ = '2.4.1'
+__version__ = '2.4.2'
 
 from . import read_root
 from . import read_root_gui
