@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
-# Current version date : 2023/08/07
-# Version = 2.4.0
+# Current version date : 2023/08/08
+# Version = 2.4.1
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -569,6 +569,8 @@ class GUIv2():
         inner_right = grid_left.place_object(g.GridLayout(False), alignment=0)
         
         #Add the buttons for the different plots:
+        self.previous_graph_btn = None #To keep track of what was the last graph button selected.
+
         self.energy_btn = self.make_comp_btn(self.inner_left, "New Energy Histogram", "Images/EnergyHist.png", column=1, row=1)
         self.energy_btn.signal_toggled.connect(self.plot_selection)
 
@@ -603,6 +605,8 @@ class GUIv2():
 
         self.clear_btn = self.make_comp_btn(self.inner_left, "Clear plot", "Images/CompClear.png", column=1, row=11)
         self.clear_btn.signal_toggled.connect(self.clear)
+
+        self.graph_buttons = [self.energy_btn, self.psd_btn, self.time_btn, self.tof_btn, self.psdvse_btn, self.evse_btn, self.tofvse_btn, self.mcs_btn]
 
         #Adding the databox and the plot
         # inner_right.new_autorow()
@@ -663,8 +667,8 @@ class GUIv2():
         self.old_range = 500
         self.old_min = 0
 
-        self.previous_start_btn = None
-        self.previous_stop_btn = None
+        self.previous_start_btn = None #To keep track of what was the last start channel button selected
+        self.previous_stop_btn = None #To keep track of what was the last stop channel buttons selected.
         
         # Calculate TOF button theme:
         light_theme = """
@@ -1003,13 +1007,13 @@ class GUIv2():
                 if label in file:
                     self.buttons_files[key] = file
 
-    def toggle_others_out(self, selected_button, buttons_list):
+    def toggle_others_out(self, selected_button: g.Button, buttons_list: list):
         for button in buttons_list:
             if button is selected_button:
                 continue
             button.set_checked(False)
 
-    def find_checked_button(self, buttons_list, previous_btn):
+    def find_checked_button(self, buttons_list: list, previous_btn: g.Button):
         for button in buttons_list:
             if button.is_checked() and button is not previous_btn:
                 return button
@@ -1034,6 +1038,13 @@ class GUIv2():
         if checked_stop_btn is not self.previous_stop_btn:
             self.toggle_others_out(checked_stop_btn, self.stop_buttons_list)
             self.previous_stop_btn = checked_stop_btn
+
+    def graph_button_toggling(self, *a):
+        #Graph buttons:
+        checked_graph_btn = self.find_checked_button(self.graph_buttons, self.previous_graph_btn)
+        if checked_graph_btn is not self.previous_graph_btn:
+            self.toggle_others_out(checked_graph_btn, self.graph_buttons)
+            self.previous_graph_btn = checked_graph_btn
 
     def load_graph_options(self):
         self.change_title()
@@ -1720,7 +1731,9 @@ class GUIv2():
             self.logs.add_log("Did you properly load your folder?")
 
         if a[0]:
-            try: self.disable_all_buttons(self.states)
+            try: 
+                self.disable_all_buttons(self.states)
+                self.graph_button_toggling()
             except: pass
         else:
             self.enable_all_buttons()
