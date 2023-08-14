@@ -4,7 +4,7 @@ path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
 sys.path.append(path) #FOR C++ TO WORK!
 
-__version__ = '2.4.3'
+__version__ = '2.4.4'
 
 from . import read_root
 from . import read_root_gui

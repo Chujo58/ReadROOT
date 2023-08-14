@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
 # Current version date : 2023/08/14
-# Version = 2.4.3
+# Version = 2.4.4
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -683,10 +683,16 @@ class GUIv2():
                 background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(61,145,169), stop:1 rgb(78,78,128));
                 color: white;
             }
-            QPushButton:hover{
+            QPushButton:hover:!pressed{
                 border: 2px solid rgb(193,193,193);
                 border-radius: 5px;
                 background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(111,205,231), stop:1 rgb(104,104,161));
+            }
+            QPushButton:hover:checked {
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(111,205,231), stop:1 rgb(91,91,144))
+                color: white;
             }
             QPushButton:disabled{
                 border: 2px solid rgb(193,193,193);
@@ -709,10 +715,16 @@ class GUIv2():
                 background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(61,145,169), stop:1 rgb(78,78,128));
                 color: white;
             }
-            QPushButton:hover{
+            QPushButton:hover:!pressed{
                 border: 2px solid rgb(193,193,193);
                 border-radius: 5px;
                 background-color: qlineargradient(x1:0, y1:0, x2: 1, y2: 1, stop:0 rgb(111,205,231), stop:1 rgb(104,104,161));
+            }
+            QPushButton:hover:checked {
+                border: 2px solid rgb(193,193,193);
+                border-radius: 5px;
+                background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(111,205,231), stop:1 rgb(91,91,144))
+                color: white;
             }
             QPushButton:disabled{
                 border: 2px solid rgb(193,193,193);
