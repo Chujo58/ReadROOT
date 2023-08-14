@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
-# Current version date : 2023/08/08
-# Version = 2.4.2
+# Current version date : 2023/08/14
+# Version = 2.4.3
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -207,7 +207,7 @@ def removeItem(combo_box: g.ComboBox, name: str):
     combo_box.remove_item(index_to_remove)
 
 class GUIv2():
-    def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio:int = None, full_screen: bool = True, dark_theme: bool = None, compress: bool = True):
+    def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio: float = None, full_screen: bool = True, dark_theme: bool = None, compress: bool = True):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         self.ratio = self.get_scale_factor() if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
         self.dark_theme_on = dd.isDark() if dark_theme is None else dark_theme
@@ -225,7 +225,7 @@ class GUIv2():
         window = g.Window(name, size=[width, height], autosettings_path=name+"_window.txt")
         window._window.setWindowIcon(QtGui.QIcon("Images/CoMPASS/icon64x64.png"))
 
-        if sys.platform.startswith("win"): #This will set the 
+        if sys.platform.startswith("win"): #This will set the icon to the taskbar. Will only work on windows, I have no idea how this should be done on MacOs.
             myappid = 'mycompany.myproduct.subproduct.version' # arbitrary string
             ct.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
@@ -245,7 +245,7 @@ class GUIv2():
         self.BotGrid.set_margins(self.margins)
 
         #This is for the lines, pens, brushes, graph types and root data.
-        self.lines = {"No lines for now.":None}
+        self.lines = {"No lines for now.":None} # This is to show the lines in the graph tab.
         self.pens = {}
         self.brushes = {}
         self.graph_info = {}
@@ -1729,6 +1729,7 @@ class GUIv2():
 
         if not hasattr(self, "load_states") and a[0]:
             self.logs.add_log("Did you properly load your folder?")
+            self.graph_button_toggling()
 
         if a[0]:
             try: 

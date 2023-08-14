@@ -1,6 +1,6 @@
 **Created by :** Chloe Legue
 
-**Current version date :** 2023/08/08
+**Current version date :** 2023/08/14
 
 <p align=center>
 <a target="_blank" href="https://www.python.org/downloads/" title="Python version"><img src="https://img.shields.io/badge/python-%3E=_3.11-green.svg"></a>
