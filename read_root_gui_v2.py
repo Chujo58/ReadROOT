@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
-# Current version date : 2023/08/14
-# Version = 2.4.4
+# Current version date : 2023/08/15
+# Version = 2.4.5
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -189,7 +189,18 @@ parameters_units = {"INPUT":{"Record length":'s',
                                      "Start-stop Δt Tmax":'s'},
                           "ONBOARD COINCIDENCES":{"Coincidence window":'s'}}
 
-def add_color(tree_dict:g.TreeDictionary, name, parent):
+def add_color(tree_dict:g.TreeDictionary, name: str, parent: bool):
+    """Adds a color picker item to the selected `TreeDictionary`
+
+    Parameters
+    ----------
+    tree_dict : g.TreeDictionary
+        The `TreeDictionary` to which we want to add a color picker
+    name : str
+        The name of the variable for the color picker
+    parent : bool
+        Whether the color picker will have a parent or not.
+    """
     if not parent:
         widget = tree_dict._widget
         param = pg.parametertree.Parameter.create(name=name,type="color")
@@ -203,10 +214,40 @@ def add_color(tree_dict:g.TreeDictionary, name, parent):
         branch.addChild(param)
 
 def removeItem(combo_box: g.ComboBox, name: str):
+    """Removes an item from a `ComboBox`
+
+    Parameters
+    ----------
+    combo_box : g.ComboBox
+        Selected `ComboBox`
+    name : str
+        Item to remove
+    """
     index_to_remove = combo_box.get_index(name)
     combo_box.remove_item(index_to_remove)
 
 class GUIv2():
+    """Class `GUIv2` : Creates a GUIv2 instance that the user can interact with.
+
+    Parameters
+    ----------
+    name : str, optional
+        Name of the window, by default `"GUIv2"`
+    window_size : list, optional
+        Default window size, by default `[1000,500]`
+    show : bool, optional
+        Shows the GUI to the user, by default `True`
+    block : bool, optional
+        Blocks the command line, by default `False`
+    ratio : float, optional
+        Scale factor of the GUI, by default `None` and will be fetched if possible (defaults to 1 otherwise)
+    full_screen : bool, optional
+        Shows the GUI in fullscreen, by default `True`
+    dark_theme : bool, optional
+        Forces the GUI into its dark mode or light mode (if `False`), by default `None` and will be fetched to match the user's default theme.
+    compress : bool, optional
+        Chooses the compression type of the `.csv` files saved by the GUI, by default `True` which turns on `bz2` compression.
+    """
     def __init__(self, name="GUIv2", window_size=[1000,500], show: bool = True, block: bool = False, ratio: float = None, full_screen: bool = True, dark_theme: bool = None, compress: bool = True):
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
         self.ratio = self.get_scale_factor() if ratio is None else ratio #This is used to scale the GUI on different screen resolutions. Note that this will only work on Windows.
@@ -405,11 +446,25 @@ class GUIv2():
         if full_screen: window._window.showMaximized()
         if show: window.show(block)
     
-    def get_screen_resolution(self):
+    def get_screen_resolution(self) -> tuple[int, int]:
+        """Gets the resolution of a screen
+
+        Returns
+        -------
+        tuple[int, int]
+            Output tuple containing the width and height of the screen.
+        """
         screen_size = p.size()
         return (screen_size.width, screen_size.height)
 
-    def get_scale_factor(self):
+    def get_scale_factor(self) -> float:
+        """Gets the scale factor of your screen. This will only work on Windows machines.
+
+        Returns
+        -------
+        scale_factor : float
+            Scale factor of your device.
+        """
         if sys.platform.startswith("win"):
             #Works only for Windows since we are working with dll.
             return float(ct.windll.shcore.GetScaleFactorForDevice(0)/100)
@@ -417,6 +472,7 @@ class GUIv2():
             return 1
 
     def generate_top_grid(self):
+        """Generates the top grid with the buttons of the GUI"""
         #For the channel buttons:
         self.previous_btn = None
         #Search folder button
@@ -442,6 +498,7 @@ class GUIv2():
         self.TopGrid.place_object(g.GridLayout()).set_width(int(680*self.ratio))
 
     def generate_bot_grid(self):
+        """Generates the bottom grid of the GUI. This contains most of the GUI, like the CoMPASS and Graph tabs,"""
         main_tab_area = self.BotGrid.place_object(g.TabArea(), alignment=0)
         main_tab_area._widget.setTabsClosable(False) #To not pop out the tabs by accident. This removes the icons if done.
         self.compass_tab = main_tab_area.add_tab("CoMPASS")
@@ -459,6 +516,7 @@ class GUIv2():
         main_tab_area.set_current_tab(0)
 
     def generate_compass_tab(self):
+        """Generates the CoMPASS tab with all of the `TreeDictionary` containing the information of the `.xml` file saved by CoMPASS. All the run settings will also be loaded such that the user can read and note the values used for a specific run."""
         self.run_dict = self.compass_tab.place_object(g.TreeDictionary(),alignment=0,column_span=3).set_height(int(100*self.ratio))
         self.run_dict._widget.setHeaderLabels(["Parameters long","Value"])
         self.run_dict.add_parameter("Run Info/Run ID", value=" ", readonly=True,tip="Run ID name set in CoMPASS/Folder name in which files are saved.")
@@ -534,6 +592,7 @@ class GUIv2():
         [channel.signal_changed.connect(self.reload_channels) for channel in [self.input_channel, self.disc_channel, self.qdc_channel, self.spectra_channel, self.reject_channel, self.energy_channel, self.sync_channel, self.misc_channel]]
 
     def generate_graph_tab(self):
+        """Generates the Graph tab which contains the plot zone and all of the different histogram buttons and settings."""
         grid_left = self.graph_tab.place_object(g.GridLayout(False), alignment=0)
         grid_right = self.graph_tab.place_object(g.GridLayout(False), alignment=0).set_width(int(300*self.ratio))
 
@@ -615,6 +674,7 @@ class GUIv2():
         self.plot = plot_region.getPlotItem()
 
     def make_plot_settings(self, parent):
+        """Generates the plot settings inside of a collapsible zone"""
         collapsible_grid_layout = g.GridLayout(False)
 
         self.plot_settings_dict = collapsible_grid_layout.place_object(g.TreeDictionary(autosettings_path="GUIv2_plot_dict.txt"),alignment=0).set_width(int(275*self.ratio))
@@ -663,6 +723,7 @@ class GUIv2():
         parent.expand()
 
     def make_collapsible_section(self, parent):
+        """Generates the TOF options inside of a collapsible zone"""
         collapse_grid_layout = g.GridLayout(False)
         self.old_range = 500
         self.old_min = 0
@@ -823,6 +884,7 @@ class GUIv2():
         parent.addWidget(collapse_grid_layout._widget)
 
     def reload_csv_files(self):
+        """Reloads the `.csv` files shown in the TOF options's Selecter"""
         self.selection.clear()
         if os.path.isdir(os.path.join(self.complete_path,"TOF Data")):
             items_to_add = list(os.listdir(os.path.join(self.complete_path,"TOF Data")))
@@ -834,12 +896,14 @@ class GUIv2():
         
 
     def make_comp_btn(self, parent, tip_text: str, url_image: str, **kwargs):
+        """Makes a button with the proper disabled and pressed style sheets."""
         btn = parent.place_object(g.Button(" ", checkable=True, tip=tip_text), alignment=0, **kwargs).set_height(int(35*self.ratio)).set_width(int(35*self.ratio))
         btn.set_style_checked(style=f"image: url({url_image}); border: 2px solid rgb(1,196,255); background: rgb(54,54,54)") if self.dark_theme_on else btn.set_style_checked(style=f"image: url({url_image}); border: 2px solid rgb(1,196,255); background: rgb(220,220,220)") 
         btn.set_style_unchecked(style=f"image: url({url_image})")
         return btn
 
     def make_channel_btn(self, parent, channel_number: int, size: int, function: callable, tip: str=None, off: str=None, on:str=None, disabled:str=None):
+        """Makes a channel button with the proper disabled and pressed style sheets."""
         tip = f"Channel {channel_number}" if tip is None else tip
         button = parent.place_object(g.Button(" ", True, tip=tip)).set_width(int(size*self.ratio)).set_height(int(size*self.ratio))
 
@@ -870,6 +934,7 @@ class GUIv2():
 
 
     def create_colors(self):
+        """Returns some colors used for the GUI"""
         if self.dark_theme_on:
             primary_color = QtGui.QColor("#01c4ff")
             secondary_color = QtGui.QColor("#0baada")
@@ -881,6 +946,7 @@ class GUIv2():
         return primary_color, secondary_color, accent_color
 
     def make_comp_settings_tab(self, parent_tab, tab_type):
+        """Makes a CoMPASS setting tab with the specific `TreeDictionary` entries."""
         grid = parent_tab.place_object(g.GridLayout(False), alignment=0)
         grid.place_object(g.Label("Channel :"))
         channel_selector = grid.place_object(g.ComboBox(items=["BOARD","CH0","CH1","CH2","CH3"])).set_width(int(1200*self.ratio))
@@ -903,6 +969,7 @@ class GUIv2():
         return channel_selector, tree_dict
    
     def search_folder(self):
+        """Function that asks the user to look for a CoMPASS folder and loads the files and data."""
         tkinter_result = fd.askdirectory()
         self.complete_path = os.path.realpath(tkinter_result)
         for file in os.listdir(self.complete_path):
@@ -920,6 +987,7 @@ class GUIv2():
         self.load_info_xml()
         
     def load_info_xml(self):
+        """Loads the information from the `.xml` and `.info` files into the CoMPASS settings and run information."""
         xml_file_path = self.complete_path + "\\" + self.xml_file
         info_file_path = self.complete_path + "\\" + self.info_file
 
@@ -952,6 +1020,7 @@ class GUIv2():
         self.changing_tree()
        
     def load_channel_settings(self, xml_obj, combo_box: g.ComboBox, tree_dict: g.TreeDictionary, key: str, *a):
+        """Load the data for a specified channel and setting group."""
         xml_key = key
         if key == "ENERGY CALIBRATION":
             xml_key = "ENERGY_CALIBRATION"
@@ -983,6 +1052,7 @@ class GUIv2():
             tree_dict[param] = information[xml_key][parameters_xml_aliases[key][param]]
     
     def reload_channels(self, *a):
+        """Reloads the data shown in the CoMPASS settings if the channel selected is changed."""
         if hasattr(self, "xml_parser"):
             self.load_channel_settings(self.xml_parser, self.input_channel, self.input_dict, "INPUT")
             self.load_channel_settings(self.xml_parser, self.disc_channel, self.disc_dict, "DISCRIMINATOR")
@@ -994,6 +1064,7 @@ class GUIv2():
             self.load_channel_settings(self.xml_parser, self.misc_channel, self.misc_dict, "MISC")
 
     def changing_tree(self, *a):
+        """Reloads the `.root` files inside of the project folder."""
         folder_to_look_in = self.complete_path + "\\" + self.root_dict["ROOT Types/Type chosen"]
         self.files = [file for file in os.listdir(folder_to_look_in) if file.endswith(".root")]
         match self.root_dict["ROOT Types/Type chosen"]:
@@ -1006,6 +1077,7 @@ class GUIv2():
         self.channel_buttons()
 
     def channel_buttons(self, *a):
+        """Finds which buttons corresponds to which channel if the channels were renamed."""
         self.load_states = True
         self.rerun_tof = True
         self.states = [None, None, None, None]
@@ -1020,17 +1092,20 @@ class GUIv2():
                     self.buttons_files[key] = file
 
     def toggle_others_out(self, selected_button: g.Button, buttons_list: list):
+        """Toggles out every button in a list of buttons aside the selected one."""
         for button in buttons_list:
             if button is selected_button:
                 continue
             button.set_checked(False)
 
     def find_checked_button(self, buttons_list: list, previous_btn: g.Button):
+        """Finds which button is checked within a list of buttons"""
         for button in buttons_list:
             if button.is_checked() and button is not previous_btn:
                 return button
 
     def channel_toggling(self, *a):
+        """Toggles the channel buttons in the top grid"""
         # #General channel buttons:
         checked_btn = self.find_checked_button(self.buttons_list, self.previous_btn)
         if checked_btn is not self.previous_btn:
@@ -1038,6 +1113,7 @@ class GUIv2():
             self.previous_btn = checked_btn
 
     def start_channel_toggling(self, *a):
+        """Toggles the start channel buttons in the TOF options"""
         #TOF start channel buttons:
         checked_start_btn = self.find_checked_button(self.start_buttons_list, self.previous_start_btn)
         if checked_start_btn is not self.previous_start_btn:
@@ -1045,6 +1121,7 @@ class GUIv2():
             self.previous_start_btn = checked_start_btn
 
     def stop_channel_toggling(self, *a):
+        """Toggles the stop channel buttons in the TOF options"""
         #TOF stop channel buttons:
         checked_stop_btn = self.find_checked_button(self.stop_buttons_list, self.previous_stop_btn)
         if checked_stop_btn is not self.previous_stop_btn:
@@ -1052,6 +1129,7 @@ class GUIv2():
             self.previous_stop_btn = checked_stop_btn
 
     def graph_button_toggling(self, *a):
+        """Toggles the histogram buttons on the left side of the plot zone"""
         #Graph buttons:
         checked_graph_btn = self.find_checked_button(self.graph_buttons, self.previous_graph_btn)
         if checked_graph_btn is not self.previous_graph_btn:
@@ -1059,6 +1137,7 @@ class GUIv2():
             self.previous_graph_btn = checked_graph_btn
 
     def load_graph_options(self):
+        """Loads the default values of the graph options so that they will correctly apply when doing the first graph."""
         self.change_title()
         self.change_legend()
         self.change_grid()
@@ -1066,9 +1145,11 @@ class GUIv2():
         self.change_log()
                 
     def change_title(self, *a):
+        """Changes the title of the graph"""
         self.plot.setLabels(title=self.plot_settings_dict["General Settings/Title"])
         
     def change_legend(self, *a):
+        """Shows the legend"""
         if self.plot_settings_dict["General Settings/Legend"]:
             self.legend = self.plot.addLegend()
         else:
@@ -1078,29 +1159,31 @@ class GUIv2():
                 self.logs.add_log("Could not remove an non-existing legend!")
     
     def change_grid(self, *a):
+        """Shows the X and Y axis grids"""
         self.plot.showGrid(x=self.plot_settings_dict["Grid/X Axis"], y=self.plot_settings_dict["Grid/Y Axis"])
 
     def change_labels(self, *a):
+        """Changes the X axis and Y axis labels"""
         self.plot.setLabel(axis="bottom",text=self.plot_settings_dict["Axis/X Label"])
         self.plot.setLabel(axis="left",text=self.plot_settings_dict["Axis/Y Label"])
 
     def change_log(self, *a):
+        """Turns on the log scale for the X and Y axis"""
         self.plot.setLogMode(self.plot_settings_dict["Axis/X Log Scale"], self.plot_settings_dict["Axis/Y Log Scale"])
 
     def change_min_max(self, *a):
+        """Changes the X and Y axis range"""
         self.plot.setXRange(self.plot_settings_dict["Axis/Min X"], self.plot_settings_dict["Axis/Max X"])
         self.plot.setYRange(self.plot_settings_dict["Axis/Min Y"], self.plot_settings_dict["Axis/Max Y"])
 
     def change_bin_number(self, new_min, new_max, *a):
+        """Changes the number of bins for the histograms. Will also update the range of the sliders in the TOF options."""
         #Get the old values
         start_values = np.array(self.start_range_hslider.value())
         stop_values = np.array(self.stop_range_hslider.value())
         
         new_range = new_max - new_min
         if new_range < 0: return
-        
-        translation_difference = new_min - self.old_min
-        range_difference = new_range - self.old_range
 
         start_positions = (start_values - self.old_min)/float(self.old_range)
         stop_positions = (stop_values - self.old_min)/float(self.old_range)
@@ -1120,15 +1203,18 @@ class GUIv2():
         self.stop_roi.setRegion(self.stop_range_hslider.value())
 
     def show_roi(self, *a):
+        """Shows the region of interest for both sliders. The one in green is for the start, the one in red is for the stop."""
         self.plot.addItem(self.start_roi) if self.roi_btn.is_checked() else self.plot.removeItem(self.start_roi)
         self.plot.addItem(self.stop_roi) if self.roi_btn.is_checked() else self.plot.removeItem(self.stop_roi)
         Merger.cuts_enabled = self.roi_btn.is_checked()
 
     def update_roi(self, *a):
+        """Changes the region of interest based on the sliders positions."""
         self.start_roi.setRegion(self.start_range_hslider.value())
         self.stop_roi.setRegion(self.stop_range_hslider.value())
 
     def change_line_highlight(self, *a):
+        """Changes the highlighted line"""
         line_selected = self.line_selector.get_text()
         
         for line in self.lines:
@@ -1170,6 +1256,7 @@ class GUIv2():
         self.previous_line = line_selected
 
     def get_bin_range(self, graph_type):
+        """Fetches the bin range for different graphs"""
         match graph_type:
             case "PSD":
                 return (0,1)
@@ -1179,6 +1266,7 @@ class GUIv2():
                 return
 
     def save_changes(self, *a):
+        """Saves the changes made to the graph options and applies them to the selected graph"""
         line_selected = self.line_selector.get_text()
         file_selected = self.selection.get_text()
         cuts_on = False
@@ -1320,6 +1408,7 @@ class GUIv2():
         self.clean_up()
 
     def delete(self, *a):
+        """Deletes the selected line/image"""
         line_selected = self.line_selector.get_text()
         self.plot.removeItem(self.lines[line_selected])
         # self.plot.legend.removeItem(self.lines[line_selected])
@@ -1337,12 +1426,14 @@ class GUIv2():
 
 
     def save_snapshot(self, *a):
+        """Saves a screenshot of the graph inside of the screenshots folder generated by CoMPASS"""
         exporter = export.ImageExporter(self.plot)
         current_date = datetime.datetime.now().strftime("%Y-%m-%d")
         path_to_save = os.path.join(self.complete_path, "SCREENSHOTS", f"{self.plot_settings_dict['General Settings/Title']}_{current_date}.png")
         exporter.export(path_to_save)
 
     def clear(self, *a):
+        """Clears the plot zone"""
         self.plot.clear()
         self.lines.clear()
         self.pens.clear()
@@ -1353,6 +1444,7 @@ class GUIv2():
         self.roi_btn.set_checked(False)
         
     def what_btn_is_checked(self, button_list, *a):
+        """Returns the index of the pressed/checked button in a list of buttons."""
         states = [button.is_checked() for button in button_list]
         for index, state in enumerate(states):
             if state:
@@ -1360,7 +1452,18 @@ class GUIv2():
         else:
             return None
     
-    def plot_data(self, data, type_: str, button: str):
+    def plot_data(self, data: tuple, type_: str, button: str):
+        """Plot the histograms (1D)
+
+        Parameters
+        ----------
+        data : tuple
+            X bins, Y bins and raw histogram data
+        type_ : str
+            Type of histogram (depending on the type some histogram ranges might change)
+        button : str
+            Button pressed for the histogram.
+        """
         pen_data = list(self.plot_settings_dict["Line/Pen Color"].getRgb())
         brush_data = list(self.plot_settings_dict["Line/Brush Color"].getRgb())
         fill_level = self.plot_settings_dict["Histogram/Fill Level"]
@@ -1406,7 +1509,16 @@ class GUIv2():
 
         self.change_bin_number(min_value, max_value)
 
-    def plot_2dhist(self, data, button: str):
+    def plot_2dhist(self, data: tuple, button: str):
+        """Plot the histograms (2D)
+
+        Parameters
+        ----------
+        data : tuple
+            X bins, Y bins and raw histogram data
+        button : str
+            Button pressed for the histogram.
+        """
         file_selected = self.selection.get_text()
         cuts_on = False
         if len(file_selected.split("_")) > 3:
@@ -1476,24 +1588,29 @@ class GUIv2():
             
         
     def enable_buttons(self, buttons_list):
+        """Enables all buttons inside of a list of buttons"""
         for button in buttons_list:
             button.enable()
 
     def enable_all_buttons(self):
+        """Enables all the buttons that can be disabled in the GUI"""
         self.enable_buttons(self.buttons_list)
         self.enable_buttons(self.start_buttons_list)
         self.enable_buttons(self.stop_buttons_list)
 
     def disable_buttons(self, buttons_list, buttons_states):
+        """Disables the buttons corresponding to their states they should have"""
         for index, button in enumerate(buttons_list):
             button.enable(value=buttons_states[index])
 
     def disable_all_buttons(self, buttons_states):
+        """Disables all buttons based on given staets"""
         self.disable_buttons(self.buttons_list, buttons_states)
         self.disable_buttons(self.start_buttons_list, buttons_states)
         self.disable_buttons(self.stop_buttons_list, buttons_states)
 
     def start_TOF(self, button, *a):
+        """Run the TOF analysis based on different sets of parameters"""
         two_files_pass = True if self.states.count(True) >= 2 else False
         if not self.selection.is_checked():
             start_btn = self.what_btn_is_checked(self.start_buttons_list)
@@ -1604,6 +1721,7 @@ class GUIv2():
 
 
     def clean_up(self, *a):
+        """Cleans up the buttons after the TOF"""
         self.root_dict.enable()
         self.cpp_tof_btn.enable()
         self.cpp_tof_btn.set_checked(False)
@@ -1628,6 +1746,7 @@ class GUIv2():
         
 
     def plot_graphs(self, *a):
+        """Plots the graph corresponding to the selected button"""
         btn_checked = self.what_btn_is_checked(self.buttons_list)
         if btn_checked is not None:
             file_to_use = self.buttons_files.get(str(btn_checked))
@@ -1710,6 +1829,7 @@ class GUIv2():
             self.clean_up()
 
     def tof_selection(self, *a):
+        """Collapses or expands the TOF zone if a TOF"""
         if a[0]:
             self.collapsible.expand()
         else:
@@ -1753,4 +1873,5 @@ class GUIv2():
 
 
     def update_states(self, *a):
+        """Updates the states of the buttons"""
         self.states[a[0][0]] = a[0][1]
