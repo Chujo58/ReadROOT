@@ -164,9 +164,9 @@ std::tuple<py::array_t<int64_t>, py::array_t<int64_t>> TOF(py::array_t<int64_t> 
     std::cout << "C++ start vector size: " << vector_start.size() << std::endl;
     std::cout << "C++ stop vector size: " << vector_stop.size() << std::endl;
 
-    const std::size_t cpu_count = std::thread::hardware_concurrency();
+    const std::size_t cpu_count = std::thread::hardware_concurrency(); //Counts the numbers of processors on the machine.
     const std::size_t vector_start_size = vector_start.size();
-    const std::size_t slice_size = std::max<std::size_t>(1, vector_start_size / cpu_count);
+    const std::size_t slice_size = std::max<std::size_t>(1, vector_start_size / cpu_count); //Creates the size of the slice for each core.
      
     std::vector<std::future<std::pair<std::vector<int64_t>, std::vector<int64_t>>>> futures;
 
@@ -180,6 +180,7 @@ std::tuple<py::array_t<int64_t>, py::array_t<int64_t>> TOF(py::array_t<int64_t> 
 
         start.insert(start.end(), p.first.begin(), p.first.end());
         stop.insert(stop.end(), p.second.begin(), p.second.end());
+        //The last two lines insert the data from each processor back into a general vector.
     }
 
     return {VEC_TO_ARRAY(start), VEC_TO_ARRAY(stop)};

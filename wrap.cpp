@@ -6,7 +6,7 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(wrap, m){
-    m.doc() = "TOF functions running from C++";
+    m.doc() = "TOF functions running from C++. Note that cppimport is requires in order for Python to communicate with this code.";
     // m.def("test", &test);
     m.def("TOF", &TOF, "Old TOF analysis with multi threading", py::arg("array_start"), py::arg("array_stop"), py::arg("window"));
 }
