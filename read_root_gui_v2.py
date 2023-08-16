@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
-# Current version date : 2023/08/15
-# Version = 2.4.5
+# Current version date : 2023/08/16
+# Version = 2.4.6
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -1839,7 +1839,7 @@ class GUIv2():
 
 
     def plot_selection(self, *a):
-        # Disable the buttons that have a file that contains no data.
+        """Disable the buttons that have a file that contains no data."""
         if hasattr(self, "load_states") and self.load_states:
             self.check_thread = QtCore.QThread()
             self.worker = QtClasses.CheckFiles()

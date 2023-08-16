@@ -6,7 +6,8 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(wrap, m){
+    m.doc() = "TOF functions running from C++";
     // m.def("test", &test);
-    m.def("TOF", &TOF);
+    m.def("TOF", &TOF, "Old TOF analysis with multi threading", py::arg("array_start"), py::arg("array_stop"), py::arg("window"));
 }
 
