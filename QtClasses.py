@@ -271,6 +271,7 @@ class TextBox(QtWidgets.QWidget):
         self.text_zone.clear()
 
 class Logger(QtCore.QObject):
+    notifications_on = True
     start_tab = 0
     text_width = 500
     def __init__(self, parent: g.TabArea) -> None:
@@ -286,16 +287,25 @@ class Logger(QtCore.QObject):
         self.text = self.log_tab.place_object(TextBox())
         self.text.set_width(self.text_width)
 
+        self.log_tab.new_autorow()
+
+        self.button = self.log_tab.place_object(g.Button("Disable notifications"))
+        self.button.signal_clicked.connect(self.clicked_button)
+
         self.text.text_modified.connect(self.change_icon)
         self._parent.signal_switched.connect(self.changed_tab)
 
         self.previous_tab = self.start_tab
 
     def change_icon(self):
-        if hasattr(self, "new_logs") and self.new_logs <= 9:
-            self._parent._widget.setTabIcon(self.index, QtGui.QIcon(f"Images/Log/{self.new_logs}.png"))
-        elif self.new_logs >= 9:
-            self._parent._widget.setTabIcon(self.index, QtGui.QIcon("Images/Log/9+.png"))
+        if hasattr(self, "previous_tab"):
+            if self.previous_tab != self.index:
+                if hasattr(self, "new_logs") and self.new_logs <= 9:
+                    self._parent._widget.setTabIcon(self.index, QtGui.QIcon(f"Images/Log/{self.new_logs}.png"))
+                elif self.new_logs >= 9:
+                    self._parent._widget.setTabIcon(self.index, QtGui.QIcon("Images/Log/9+.png"))
+        else:
+            self._parent._widget.setTabIcon(self.index, QtGui.QIcon("Images/Log/0.png"))
 
     def changed_tab(self):
         current_tab = self._parent.get_current_tab()
@@ -303,6 +313,12 @@ class Logger(QtCore.QObject):
             self.new_logs = 0
             self.change_icon()
         self.previous_tab = current_tab
+
+    def clicked_button(self):
+        current_time = datetime.datetime.now()
+        self.notifications_on = False if self.notifications_on else True
+        self.text.add_text(f"{current_time.strftime('%Y-%m-%d %H:%M')} - Notifications are now {'enabled' if self.notifications_on else 'disabled'}!\n")
+        self.button._widget.setText("Disable notifications") if self.notifications_on else self.button._widget.setText("Enable notifications")
 
     def add_log(self, log_message: str, log_type: str = None) -> None:
         current_time = datetime.datetime.now()
@@ -317,7 +333,7 @@ class Logger(QtCore.QObject):
         if log_type == None:
             self.text.add_text(formatted_log_message)
 
-        playsound("discord.mp3")
+        if self.notifications_on: playsound("discord.mp3")
 
 
 

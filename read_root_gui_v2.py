@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
-# Current version date : 2023/08/16
-# Version = 2.4.7
+# Current version date : 2023/08/21
+# Version = 2.4.8
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -189,7 +189,7 @@ parameters_units = {"INPUT":{"Record length":'s',
                                      "Start-stop Δt Tmax":'s'},
                           "ONBOARD COINCIDENCES":{"Coincidence window":'s'}}
 
-def add_color(tree_dict:g.TreeDictionary, name: str, parent: bool):
+def add_color(tree_dict:g.TreeDictionary, name: str, parent: bool, default: QtGui.QColor = None):
     """Adds a color picker item to the selected `TreeDictionary`
 
     Parameters
@@ -200,17 +200,19 @@ def add_color(tree_dict:g.TreeDictionary, name: str, parent: bool):
         The name of the variable for the color picker
     parent : bool
         Whether the color picker will have a parent or not.
+    default : tuple
+        RGBA default value given to the color picker
     """
     if not parent:
         widget = tree_dict._widget
-        param = pg.parametertree.Parameter.create(name=name,type="color")
+        param = pg.parametertree.Parameter.create(name=name,type="color",default=default, value=default) if default is not None else pg.parametertree.Parameter.create(name=name,type="color", value=default)
         widget.addParameters(param)
         tree_dict.connect_any_signal_changed(tree_dict.autosave)
     else:
         s = name.split('/')
         name = s.pop(-1)
         branch = tree_dict._find_parameter(s, create_missing=True)
-        param = pg.parametertree.Parameter.create(name=name, type="color")
+        param = pg.parametertree.Parameter.create(name=name, type="color",default=default, value=default) if default is not None else pg.parametertree.Parameter.create(name=name,type="color", value=default)
         branch.addChild(param)
 
 def removeItem(combo_box: g.ComboBox, name: str):
@@ -686,8 +688,8 @@ class GUIv2():
         self.plot_settings_dict.connect_signal_changed("General Settings/Legend", self.change_legend)
         
         self.plot_settings_dict.add_parameter("Line/Name",value=" ", tip="Name of the line")
-        add_color(self.plot_settings_dict, "Line/Pen Color",True)
-        add_color(self.plot_settings_dict, "Line/Brush Color",True)
+        add_color(self.plot_settings_dict, "Line/Pen Color",True, QtGui.QColor(67, 230, 110, 255))
+        add_color(self.plot_settings_dict, "Line/Brush Color",True, QtGui.QColor(67, 194, 230, 255))
 
         self.plot_settings_dict.add_parameter("Grid/X Axis",value=True, tip="Shows the X-axis grid")
         self.plot_settings_dict.connect_signal_changed("Grid/X Axis", self.change_grid)
