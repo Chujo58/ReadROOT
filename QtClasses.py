@@ -203,7 +203,7 @@ class Selecter(QtCore.QObject):
             }
             QPushButton::disabled:checked{
         """ + f"image: url({button_icon_disabled});" + """
-        """ + f"border: 2ox solid {'rgb(85, 85, 85)' if Selecter.dark_theme else 'rgb(197, 197, 197)'};" + """
+        """ + f"border: 2px solid {'rgb(85, 85, 85)' if Selecter.dark_theme else 'rgb(197, 197, 197)'};" + """
         """ + f"background: {'rgb(54,54,54)' if Selecter.dark_theme else 'rgb(220,220,220)'};" + """
             }
         """
