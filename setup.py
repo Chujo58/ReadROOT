@@ -1,4 +1,4 @@
-__version__ = "2.4.8"
+__version__ = "2.5.0"
 
 from setuptools import setup
 
@@ -60,5 +60,5 @@ setup(
         "playsound==1.2.2"
     ],
     include_package_data= True,
-    python_requires = ">=3.11"
+    python_requires = ">=3.10"
 )

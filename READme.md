@@ -1,9 +1,9 @@
 **Created by :** Chloe Legue
 
-**Current version date :** 2023/08/21
+**Current version date :** 2023/09/12
 
 <p align=center>
-<a target="_blank" href="https://www.python.org/downloads/" title="Python version"><img src="https://img.shields.io/badge/python-%3E=_3.11-green.svg"></a>
+<a target="_blank" href="https://www.python.org/downloads/" title="Python version"><img src="https://img.shields.io/badge/python-%3E=_3.10-green.svg"></a>
 <a target="_blank" href="https://pypi.org/project/ReadROOT/" title="PyPI version"><img src="https://img.shields.io/pypi/v/ReadROOT?logo=pypi"></a>
 </p>
 
