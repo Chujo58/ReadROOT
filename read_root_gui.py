@@ -27,7 +27,7 @@ import spinmob.egg as _egg
 import numpy as _np
 import uproot as _ur
 import pandas as _pd
-import tkinter.filedialog as _fd
+# import tkinter.filedialog as _fd
 import pyqtgraph as _pg
 import ctypes as _ct
 import pyqtgraph.exporters as _export
@@ -1256,7 +1256,8 @@ class GUI(_root_reader):
         self.settings['Plot Settings/Fill Color/Blue'] = blue
 
     def __search_folder__(self, *a):
-        folder_path = _fd.askdirectory(initialdir='/')
+        # folder_path = _fd.askdirectory(initialdir='/')
+        folder_path = QtWidgets.QFileDialog.getExistingDirectory(self)
         path = _os.path.realpath(folder_path)
         folder_name = path.split('\\')[-1]
         #self.folder_label.set_text(folder_name)

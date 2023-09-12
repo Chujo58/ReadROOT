@@ -1,6 +1,5 @@
 import xml.etree.ElementTree as ET
 from datetime import datetime
-import tkinter.filedialog as fd
 from bs4 import BeautifulSoup
 
 class XMLParser:

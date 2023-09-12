@@ -3,7 +3,6 @@ import sys
 import matplotlib.pyplot as _plt #type: ignore
 import uproot as _ur #type: ignore
 import pandas
-import tkinter.filedialog as _fd
 from scipy.optimize import curve_fit #type: ignore
 import pint
 
@@ -188,7 +187,9 @@ class _root_reader():
     def __init__(self, Default_directory = '/', Warning=False, askfile=False):
         if askfile:
             self.def_dir = Default_directory
-            self.file_path = _fd.askopenfilename(initialdir=self.def_dir, title='Select a file', filetypes=(('ROOT file', '*.root'), ('All files', '*.*')))
+            if sys.platform.startswith("win"):
+                import tkinter.filedialog as _fd
+                self.file_path = _fd.askopenfilename(initialdir=self.def_dir, title='Select a file', filetypes=(('ROOT file', '*.root'), ('All files', '*.*')))
             """
             String containing the path of the chosen file.
             """
@@ -422,8 +423,8 @@ class _root_reader():
         y = hist[0]
         return (x, y, data['Timestamp']/10**12)
 
-    def __getfilepath__(self):
-        return _fd.askopenfilename(initialdir='/', title='Select a file', filetypes=(('ROOT file', '*.root'), ('All files', '*.*')))
+    # def __getfilepath__(self):
+    #     return _fd.askopenfilename(initialdir='/', title='Select a file', filetypes=(('ROOT file', '*.root'), ('All files', '*.*')))
 
     def __transform_root_to_excel__(self, filepath, tree='Data_F'):
         """
