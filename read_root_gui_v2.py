@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
 # Current version date : 2023/09/12
-# Version = 2.5.0
+# Version = 2.5.1
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 
@@ -41,12 +41,12 @@ Converter = merge.Converter
 import spinmob as s #type: ignore
 import spinmob.egg as egg #type: ignore
 import numpy as np
-import tkinter.filedialog as fd
+# import tkinter.filedialog as fd
 import pyqtgraph as pg #type: ignore
 import ctypes as ct
 import pyqtgraph.exporters as export #type: ignore
 import darkdetect as dd #type: ignore
-from PyQt5 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 import superqt, datetime
 import pyautogui as p
 #----------------------------------------------------------------------------
@@ -972,7 +972,8 @@ class GUIv2():
    
     def search_folder(self):
         """Function that asks the user to look for a CoMPASS folder and loads the files and data."""
-        tkinter_result = fd.askdirectory()
+        # tkinter_result = fd.askdirectory()
+        tkinter_result = QtWidgets.QFileDialog.getExistingDirectory()
         self.complete_path = os.path.realpath(tkinter_result)
         for file in os.listdir(self.complete_path):
             if file.endswith(".xml"):
