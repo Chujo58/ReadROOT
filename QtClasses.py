@@ -335,15 +335,58 @@ class Logger(QtCore.QObject):
 
         if self.notifications_on: playsound("discord.mp3")
 
+class TableDictionary(QtWidgets.QTableWidget):
+    def __init__(self, rows: int, columns: int) -> None:
+        super(QtWidgets.QTableWidget, self).__init__()
+        self.data = {}
+        self.rows = rows
+        self.columns = columns
+
+        self.setRowCount(rows)
+        self.setColumnCount(columns)
+
+        self.horizontalHeader().setStretchLastSection(True)
+        self.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+
+    def addRowLabels(self, labels: list):
+        if len(labels) >= self.rows:
+            labels = labels[0:self.rows]
+
+        self.setVerticalHeaderLabels(labels)
+        for label in labels:
+            self.data[label] = []
+
+    def addData(self, data: dict):
+        for key, value in data.items():
+            if key in self.data:
+                self.data[key].append(value)
+
+        for i1, (key, values) in enumerate(data.items()):
+            if type(values) == list:
+                for i2, value in enumerate(values):
+                    self.setItem(i1, i2, QtWidgets.QTableWidgetItem(value))
+            else:
+                self.setItem(i1, 0, QtWidgets.QTableWidgetItem(str(values)))
+                
+
+        
+
 
 
 if __name__ == "__main__":
     w = g.Window()
-    obj = SelectionBox()
-    obj.change_icon("SelectDark.png")
-    obj.set_height(75)
-    t = w.place_object(obj.grid)
-    to_add = list(os.listdir("Images"))
-    obj.add_items(to_add)
-    obj.on_save.connect(lambda x: print(x))
+    # a = w.place_object(g.GridLayout())
+    obj = TableDictionary(2,2)
+    obj.addRowLabels(["test","hallo"])
+    obj.addData({"test":5.0,"hallo":"bonjour"})
+    obj.setMinimumWidth(250) 
+    w.place_object(obj,alignment=0)
+
+    # obj = SelectionBox()
+    # obj.change_icon("SelectDark.png")
+    # obj.set_height(75)
+    # t = w.place_object(obj.grid)
+    # to_add = list(os.listdir("Images"))
+    # obj.add_items(to_add)
+    # obj.on_save.connect(lambda x: print(x))
     w.show(True)
