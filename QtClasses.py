@@ -336,11 +336,14 @@ class Logger(QtCore.QObject):
         if self.notifications_on: playsound("discord.mp3")
 
 class TableDictionary(QtWidgets.QTableWidget):
-    def __init__(self, rows: int, columns: int) -> None:
+    def __init__(self, rows: int, columns: int, editable = None) -> None:
         super(QtWidgets.QTableWidget, self).__init__()
         self.data = {}
         self.rows = rows
         self.columns = columns
+        if (editable is not None):
+            if not editable:
+                self.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers)
 
         self.setRowCount(rows)
         self.setColumnCount(columns)
@@ -355,6 +358,12 @@ class TableDictionary(QtWidgets.QTableWidget):
         self.setVerticalHeaderLabels(labels)
         for label in labels:
             self.data[label] = []
+
+    def addColumnLabels(self, labels: list):
+        if len(labels) >= self.columns:
+            labels = labels[0:self.columns]
+
+        self.setHorizontalHeaderLabels(labels)
 
     def addData(self, data: dict):
         for key, value in data.items():
@@ -376,9 +385,9 @@ class TableDictionary(QtWidgets.QTableWidget):
 if __name__ == "__main__":
     w = g.Window()
     # a = w.place_object(g.GridLayout())
-    obj = TableDictionary(2,2)
+    obj = TableDictionary(2,3)
     obj.addRowLabels(["test","hallo"])
-    obj.addData({"test":5.0,"hallo":"bonjour"})
+    obj.addData({"test":5.0,"hallo":["bonjour","hallo"]})
     obj.setMinimumWidth(250) 
     w.place_object(obj,alignment=0)
 
