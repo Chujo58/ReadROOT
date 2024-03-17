@@ -11,3 +11,4 @@ build
 dist
 ReadROOT.egg-info
 reload.py
+info.txt
