@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------
 # Created by : Chloé Legué
 # Current version date : 2024/03/17
-# Version = 2.5.5
+# Version = 2.5.6
 #----------------------------------------------------------------------------
 """
 This code was made for the coincidence experiment at McGill University. 

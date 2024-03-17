@@ -86,7 +86,7 @@ class UFloat():
         return UFloat(value, error)
 
     def __rsub__(self, other):
-        return UFloat.__sub__(self, other)
+        return UFloat.__sub__(self, other)*-1
 
     def __mul__(self, other):
         if type(other) != UFloat:
