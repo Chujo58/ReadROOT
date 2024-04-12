@@ -244,6 +244,9 @@ class UList(UFloat):
         return len(self.list)
     
     def __getitem__(self, item):
+        if isinstance(item, slice):
+            indices = range(*item.indices(len(self.list)))
+            return UList(ufloats=[self.list[i] for i in indices])
         return self.list[item]
 
     def __str__(self):
