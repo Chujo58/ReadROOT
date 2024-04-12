@@ -291,7 +291,7 @@ class UList(UFloat):
         return self
 
     def __rsub__(self, other):
-        return UList.__sub__(self, other)
+        return UList.__sub__(self, other)*-1
 
     def __isub__(self, other):
         return UList.__sub__(self, other)
