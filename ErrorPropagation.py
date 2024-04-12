@@ -256,7 +256,25 @@ class UList(UFloat):
         return string
 
     def __add__(self, other):
-        # total = []
+        total = []
+        if type(other) == UList:
+            if len(other) == len(self):
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat + other.list[index])
+        if type(other) != UList:
+            if type(other) == list:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat + other[index])
+            else:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat + other)
+
+        return UList(ufloats=total)
+
+    def __radd__(self, other):
+        return UList.__add__(self, other)
+
+    def __iadd__(self, other):
         if type(other) == UList:
             if len(other) == len(self):
                 for index, ufloat in enumerate(self.list):
@@ -271,13 +289,27 @@ class UList(UFloat):
 
         return self
 
-    def __radd__(self, other):
-        return UList.__add__(self, other)
-
-    def __iadd__(self, other):
-        return UList.__add__(self, other)
-
     def __sub__(self, other):
+        total = []
+        if type(other) == UList:
+            if len(other) == len(self):
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat - other.list[index])
+
+        if type(other) != UList:
+            if type(other) == list:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat - other[index])
+            else:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat - other)
+
+        return UList(ufloats=total)
+
+    def __rsub__(self, other):
+        return UList.__sub__(self, other)*-1
+
+    def __isub__(self, other):
         if type(other) == UList:
             if len(other) == len(self):
                 for index, ufloat in enumerate(self.list):
@@ -292,14 +324,27 @@ class UList(UFloat):
                     self.list[index] -= other
 
         return self
-
-    def __rsub__(self, other):
-        return UList.__sub__(self, other)*-1
-
-    def __isub__(self, other):
-        return UList.__sub__(self, other)
-
+    
     def __mul__(self, other):
+        total = []
+        if type(other) == UList:
+            if len(other) == len(self):
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat * other.list[index])
+        if type(other) != UList:
+            if type(other) == list:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat * other[index])
+            else:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat * other)
+
+        return UList(ufloats=total)
+
+    def __rmul__(self, other):
+        return UList.__mul__(self, other)
+
+    def __imul__(self, other):
         if type(other) == UList:
             if len(other) == len(self):
                 for index, ufloat in enumerate(self.list):
@@ -314,13 +359,26 @@ class UList(UFloat):
 
         return self
 
-    def __rmul__(self, other):
-        return UList.__mul__(self, other)
-
-    def __imul__(self, other):
-        return UList.__mul__(self, other)
-
     def __truediv__(self, other):
+        total = []
+        if type(other) == UList:
+            if len(other) == len(self):
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat / other.list[index])
+        if type(other) != UList:
+            if type(other) == list:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat / other[index])
+            else:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat / other)
+
+        return UList(ufloats=total)
+
+    def __rtruediv__(self, other):
+        return UList.__truediv__(self, other)**(-1)
+
+    def __idiv__(self, other):
         if type(other) == UList:
             if len(other) == len(self):
                 for index, ufloat in enumerate(self.list):
@@ -335,13 +393,23 @@ class UList(UFloat):
 
         return self
 
-    def __rtruediv__(self, other):
-        return UList.__truediv__(self, other)**(-1)
-
-    def __idiv__(self, other):
-        return UList.__truediv__(self, other)
-
     def __pow__(self, other):
+        total = []
+        if type(other) == UList:
+            if len(other) == len(self):
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat ** other.list[index])
+        if type(other) != UList:
+            if type(other) == list:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat ** other[index])
+            else:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat ** other)
+        
+        return UList(ufloats=total)
+
+    def __ipow__(self, other):
         if type(other) == UList:
             if len(other) == len(self):
                 for index, ufloat in enumerate(self.list):
@@ -356,10 +424,23 @@ class UList(UFloat):
         
         return self
 
-    def __ipow__(self, other):
-        return UList.__pow__(self, other)
-
     def __mod__(self, other):
+        total = []
+        if type(other) == UList:
+            if len(other) == len(self):
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat % other.list[index])
+        if type(other) != UList:
+            if type(other) == list:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat % other[index])
+            else:
+                for index, ufloat in enumerate(self.list):
+                    total.append(ufloat % other)
+        
+        return UList(ufloats=total)
+
+    def __imod__(self, other):
         if type(other) == UList:
             if len(other) == len(self):
                 for index, ufloat in enumerate(self.list):
@@ -373,9 +454,6 @@ class UList(UFloat):
                     self.list[index] %= other
         
         return self
-
-    def __imod__(self, other):
-        return UList.__mod__(self, other)
 
     def sum(self):
         total = 0
