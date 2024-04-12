@@ -59,6 +59,10 @@ class UFloat():
         # return f"({self._value/scale:.{length}f}±{self._error/scale:.{length}f})"
         return f"({round(self._value,length)}±{round(self._error,length)})"
 
+    def print(self, decimals, latex=False):
+        length = self.first_digit(self._error)
+        print(f"({round(self._value,length+decimals)}{'\pm' if latex else '±'}{round(self._error,length+decimals)})")
+
     #Mathematical functions
     def __add__(self, other):
         if type(other) != UFloat:
@@ -251,8 +255,9 @@ class UList(UFloat):
 
     def __str__(self):
         string = ""
-        for ufloat in self.list:
+        for ufloat in self.list[0:-1]:
             string += str(ufloat) + ", "
+        string += str(self.list[-1])
         return string
 
     def __add__(self, other):
