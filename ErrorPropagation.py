@@ -59,9 +59,9 @@ class UFloat():
         # return f"({self._value/scale:.{length}f}±{self._error/scale:.{length}f})"
         return f"({round(self._value,length)}±{round(self._error,length)})"
 
-    def print(self, decimals, latex=False):
+    def show(self, decimals, latex=False):
         length = self.first_digit(self._error)
-        print(f"({round(self._value,length+decimals)}{'\pm' if latex else '±'}{round(self._error,length+decimals)})")
+        return f"({round(self._value,length+decimals)}{'\pm' if latex else '±'}{round(self._error,length+decimals)})"
 
     #Mathematical functions
     def __add__(self, other):
