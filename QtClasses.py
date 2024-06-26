@@ -335,7 +335,7 @@ class Logger(QtCore.QObject):
 
         if self.notifications_on: playsound("discord.mp3")
 
-class TableDictionary(QtWidgets.QTableWidget):
+class SimpleTable(QtWidgets.QTableWidget):
     def __init__(self, rows: int, columns: int, editable = None) -> None:
         super(QtWidgets.QTableWidget, self).__init__()
         self.data = {}
@@ -378,18 +378,80 @@ class TableDictionary(QtWidgets.QTableWidget):
                 self.setItem(i1, 0, QtWidgets.QTableWidgetItem(str(values)))
                 
 
-        
+class TableDictionary(g.Table):
+    def __init__(self, elements: int, edit: bool = None):
+        """Creates a `Table` object with a key/value pair, similar to a dictionary.
 
+        Parameters
+        ----------
+        elements : int
+            Amount of elements/columns in the data.
+        """
+
+        g.Table.__init__(self, elements, 0)
+
+        if edit is not None: self._widget.setEditTriggers(QtWidgets.QTableWidget.NoEditTriggers) if not edit else None
+
+        #Length item:
+        self.len = 0
+        self.dtsize = elements
+
+        #Signals
+        self.signal_cell_changed        = self._widget.cellChanged
+        self.signal_cell_clicked        = self._widget.cellClicked
+        self.signal_cell_double_clicked = self._widget.cellDoubleClicked
+
+
+    #TO BE EDITED SINCE WE NEED TO ADD A HEADER!!!!
+    def keys(self):
+        keys = list()
+        for n in range(self.len):
+            key = self.get_value()
+            if not key in ['', None]: keys.append(key)
+
+        return keys
+    
+    def set_item(self, key, value: list):
+        keys = self.keys()
+        if key in keys:
+            for index, item in enumerate(value, start=1):
+                self.set_value(index, keys.index(key), item)
+
+        else:
+            self.set_value(0, self.len, key)
+            for index, item in enumerate(value, start=1):
+                self.set_value(index, self.len, item)
+
+        self.len += 1
+
+    def add_item(self, key, value: list): self.set_item(key, value)
+
+    def get_item(self, key):
+        keys = self.keys()
+        data = []
+        for i in range(self.dtsize):
+            data.append(self.get_value(i+1,keys.index(key)))
+        return data
+    
+    def __getitem__(self, key): return self.get_item(key)
 
 
 if __name__ == "__main__":
     w = g.Window()
     # a = w.place_object(g.GridLayout())
-    obj = TableDictionary(2,3)
-    obj.addRowLabels(["test","hallo"])
-    obj.addData({"test":5.0,"hallo":["bonjour","hallo"]})
-    obj.setMinimumWidth(250) 
-    w.place_object(obj,alignment=0)
+
+    #Old tester for SimpleTable
+    # obj = SimpleTable(2,3)
+    # obj.addRowLabels(["test","hallo"])
+    # obj.addData({"test":5.0,"hallo":["bonjour","hallo"]})
+    # obj.setMinimumWidth(250) 
+    # w.place_object(obj,alignment=0)
+
+    obj = TableDictionary(3)
+    obj.add_item('Test', [1,2,3])
+    obj.add_item('Test1', [4,2.4,2.1])
+    w.place_object(obj, alignment=0)
+    print(obj.get_item('Test'))
 
     # obj = SelectionBox()
     # obj.change_icon("SelectDark.png")
