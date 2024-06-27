@@ -6,6 +6,10 @@ import datetime, os, superqt
 import read_root
 from playsound import playsound
 
+# volt_peak_peak = 1 * pint.Unit.volt = Vpp = volt_peak_peak
+ureg = pint.UnitRegistry()
+ureg.define("volt_peak_peak = 1 * volt = Vpp = Vpp")
+
 class bcolors:
 	HEADER = '\033[95m'
 	OKBLUE = '\033[94m'
@@ -406,7 +410,7 @@ class TableDictionary(g.Table):
 		if type(data) is bool:
 			return '✔' if data else '✖'
 		if unit is None: unit = ' '
-		qty = pint.Quantity(data, unit)
+		qty = ureg.Quantity(data, unit)
 		return f"{qty:#~.0f}"
 
 	#TO BE EDITED SINCE WE NEED TO ADD A HEADER!!!!
@@ -483,9 +487,11 @@ if __name__ == "__main__":
 	obj.header(['Key','V1','V2','V3'])
 	obj.add_item('Test', [1,True,3],[None,None,'s'])
 	obj.add_item('Test1', [4,2.4,200e-7],[None,None,'s'])
-	obj.add_item('Test1', [4,2.4,250e-7],[None,None,'s'])
+	obj.add_item('Test1', [4,2.4,250e-7],['Vpp',None,'s'])
 
 	w.place_object(obj, alignment=0)
+	test = ureg.Quantity(16,'Vpp')
+	print(test)
 	# print(obj.get_item('Test1'))
 	# print(obj['Test1'])
 
