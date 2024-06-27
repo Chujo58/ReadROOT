@@ -407,11 +407,23 @@ class TableDictionary(g.Table):
 		self.signal_cell_clicked        = self._widget.cellClicked
 		self.signal_cell_double_clicked = self._widget.cellDoubleClicked
 
-	def _format_data(self, data: typing.Union[int, float, bool], unit = None, type_ = 'float') -> str:
+		#Style
+		self._widget.setAlternatingRowColors(True)
+
+	def _format_data(self, data: typing.Union[int, float, bool, str], unit = None, type_ = 'float') -> str:
 		if type(data) is bool and data is not None:
 			return '✔' if data else '✖'
 		elif type_ == 'bool':
 			return '▢'
+
+		if type_ == 'str':
+			return data
+		
+		if type_ == 'float':
+			data = float(data)
+
+		if type_ == 'int':
+			data = int(data)
 		
 		if unit is None: unit = ' '
 		qty = ureg.Quantity(data, unit)
@@ -419,13 +431,22 @@ class TableDictionary(g.Table):
 
 	#TO BE EDITED SINCE WE NEED TO ADD A HEADER!!!!
 	def header(self, labels):
-		if self.len != 0: return        
-		for index, item in enumerate(labels):
-			self.set_value(index, 0, item)
+		# if self.len != 0: return        
+		# for index, item in enumerate(labels):
+		# 	self.set_value(index, 0, item)
 
-		self.len += 1
-		self.keys.append(labels[0])
-		self._widget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+		# self.len += 1
+		# self.keys.append(labels[0])
+		# self._widget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
+		
+		# QtWidgets.QTableWidget().horizontalHeader().setFixedSize(100*self.ratio, QtWidgets.QTableWidget().height())
+
+		self._widget.setHorizontalHeaderLabels(labels)
+		self._widget.horizontalHeader().show()
+
+	def set_columns_size(self, width: int) -> None:
+		for i in range(self.dtsize):
+			self.set_column_width(i, width)
 	
 	def set_item(self, key: str, value: list, unit: list, type_ = 'float'):
 		keys = self.keys

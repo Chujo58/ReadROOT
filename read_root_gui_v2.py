@@ -50,6 +50,7 @@ import darkdetect as dd #type: ignore
 from PyQt5 import QtGui, QtCore, QtWidgets
 import superqt, datetime
 import pyautogui as p
+import typing
 #----------------------------------------------------------------------------
 
 g = egg.gui
@@ -1013,8 +1014,9 @@ class GUIv2():
 
             return channel_selector, tree_dict
 
-        table_dict: TableDictionary = grid.place_object(TableDictionary(5))
-        table_dict.set_width(int(1275*self.ratio))
+        table_dict: TableDictionary = grid.place_object(TableDictionary(6, False))
+        table_dict.set_columns_size(int(1248/table_dict.dtsize*self.ratio))
+        table_dict.set_width(int(1250*self.ratio))
         table_dict.header(['PARAMETER','BOARD','CH0','CH1','CH2','CH3'])
         table_dict._widget.setStyleSheet(self.dark_table) if self.dark_theme_on else table_dict._widget.setStyleSheet(self.light_table)
 
@@ -1023,12 +1025,9 @@ class GUIv2():
             unit = tab_units.get(param) if tab_units is not None else None
             type_ = parameters_types[tab_type].get(param)
 
-            if tab_type in ["REJECTIONS","ENERGY CALIBRATION","SYNC","MISC"]:
-                table_dict.add(param, [0]*5, [None]*5, type_)
-            else:
-                table_dict.add(param, [0]*5, [unit]*5, type_)
+            table_dict.add(param, [0]*5, [unit]*5, type_)
 
-        
+        return table_dict  
    
     def search_folder(self):
         """Function that asks the user to look for a CoMPASS folder and loads the files and data."""
@@ -1081,7 +1080,43 @@ class GUIv2():
         
         self.reload_channels()
         self.changing_tree()
-       
+
+    def load_compass_settings(self, board_data, channels_data, table_dict: TableDictionary, key: str, *a):
+        xml_key = key
+        table_keys = table_dict.keys
+        tab_units = parameters_units.get(key)
+
+        if key == "ENERGY CALIBRATION":
+            xml_key = "ENERGY_CALIBRATION"
+        if key == "ONBOARD COINCIDENCES":
+            xml_key = "HARDWARE_COINCIDENCE"
+        if key == "SPECTRA":
+            for index, param in enumerate(table_keys):
+                if index == 0: continue
+                unit = tab_units.get(param) if tab_units is not None else None
+                type_ = parameters_types[key].get(param)
+
+                if type_ == 'str':
+                    data = [board_data[xml_key][parameters_xml_aliases[key][param]][0:-2], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]][0:-2] for i in range(4)]]
+                    table_dict.set_item(param, data, [unit]*5, type_)
+                    continue
+
+                data = [board_data[xml_key][parameters_xml_aliases[key][param]], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]] for i in range(4)]]
+                table_dict.set_item(param, data, [unit]*5, type_)
+            return        
+        
+        for index, param in enumerate(table_keys):
+            if index == 0: continue
+            unit = tab_units.get(param) if tab_units is not None else None
+            type_ = parameters_types[key].get(param)
+
+            data = [board_data[xml_key][parameters_xml_aliases[key][param]], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]] for i in range(4)]]
+            # if key == "QDC":
+            #     # print(board_data[xml_key][parameters_xml_aliases[key][param]])
+            #     print(f"{param} :\t{data}") #FOR DEBUG
+            table_dict.set_item(param, data, [unit]*5, type_)
+ 
+
     def load_channel_settings(self, xml_obj, combo_box: g.ComboBox, tree_dict: g.TreeDictionary, key: str, *a):
         """Load the data for a specified channel and setting group."""
         xml_key = key
@@ -1125,6 +1160,19 @@ class GUIv2():
             self.load_channel_settings(self.xml_parser, self.energy_channel, self.energy_dict, "ENERGY CALIBRATION")
             self.load_channel_settings(self.xml_parser, self.sync_channel, self.sync_dict, "SYNC")
             self.load_channel_settings(self.xml_parser, self.misc_channel, self.misc_dict, "MISC")
+
+        if hasattr(self, "xml_parser"):
+            board_data = self.xml_parser.get_parameters()
+            channels_data = [self.xml_parser.get_chn_parameters(i) for i in range(4)]
+
+            self.load_compass_settings(board_data, channels_data, self.input_dict, "INPUT")
+            self.load_compass_settings(board_data, channels_data, self.disc_dict, "DISCRIMINATOR")
+            self.load_compass_settings(board_data, channels_data, self.qdc_dict, "QDC")
+            self.load_compass_settings(board_data, channels_data, self.spectra_dict, "SPECTRA")
+            self.load_compass_settings(board_data, channels_data, self.reject_dict, "REJECTIONS")
+            self.load_compass_settings(board_data, channels_data, self.energy_dict, "ENERGY CALIBRATION")
+            self.load_compass_settings(board_data, channels_data, self.sync_dict, "SYNC")
+            self.load_compass_settings(board_data, channels_data, self.misc_dict, "MISC")
 
     def changing_tree(self, *a):
         """Reloads the `.root` files inside of the project folder."""
