@@ -9,6 +9,7 @@ from playsound import playsound
 # volt_peak_peak = 1 * pint.Unit.volt = Vpp = volt_peak_peak
 ureg = pint.UnitRegistry()
 ureg.define("volt_peak_peak = 1 * volt = Vpp = Vpp")
+ureg.define("least_significant_bit = 1 bit = lsb = lsb")
 
 class bcolors:
 	HEADER = '\033[95m'
@@ -406,9 +407,12 @@ class TableDictionary(g.Table):
 		self.signal_cell_clicked        = self._widget.cellClicked
 		self.signal_cell_double_clicked = self._widget.cellDoubleClicked
 
-	def _format_data(self, data: typing.Union[int, float, bool], unit = None) -> str:
-		if type(data) is bool:
+	def _format_data(self, data: typing.Union[int, float, bool], unit = None, type_ = 'float') -> str:
+		if type(data) is bool and data is not None:
 			return '✔' if data else '✖'
+		elif type_ == 'bool':
+			return '▢'
+		
 		if unit is None: unit = ' '
 		qty = ureg.Quantity(data, unit)
 		return f"{qty:#~.0f}"
@@ -421,8 +425,9 @@ class TableDictionary(g.Table):
 
 		self.len += 1
 		self.keys.append(labels[0])
+		self._widget.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeToContents)
 	
-	def set_item(self, key: str, value: list, unit: list):
+	def set_item(self, key: str, value: list, unit: list, type_ = 'float'):
 		keys = self.keys
 		
 		if key not in keys:
@@ -438,9 +443,9 @@ class TableDictionary(g.Table):
 
 			for index, item in enumerate(value, start=1):
 				if unit is None:
-					self.set_value(index, self.len, self._format_data(item, None))
+					self.set_value(index, self.len, self._format_data(item, None, type_))
 					continue
-				self.set_value(index, self.len, self._format_data(item, unit[index-1]))
+				self.set_value(index, self.len, self._format_data(item, unit[index-1], type_))
 			
 			self.len += 1
 			return
@@ -452,15 +457,15 @@ class TableDictionary(g.Table):
 
 		for index, item in enumerate(value, start=1):
 			if unit is None:
-				self.set_value(index, keys.index(key), self._format_data(item, None))
+				self.set_value(index, keys.index(key), self._format_data(item, None, type_))
 				continue
-			self.set_value(index, keys.index(key), self._format_data(item, unit[index-1]))
+			self.set_value(index, keys.index(key), self._format_data(item, unit[index-1], type_))
 		
 
 		self.len += 1
 
-	def add_item(self, key: str, value: list, unit: list): self.set_item(key, value, unit)
-	def add(self, key: str, value: list, unit: list): self.set_item(key, value, unit)
+	def add_item(self, key: str, value: list, unit: list, type_ = 'float'): self.set_item(key, value, unit, type_)
+	def add(self, key: str, value: list, unit: list, type_ = 'float'): self.set_item(key, value, unit, type_)
 
 	def get_item(self, key):
 		keys = self.keys

@@ -622,7 +622,15 @@ class GUIv2():
             [channel.signal_changed.connect(self.reload_channels) for channel in [self.input_channel, self.disc_channel, self.qdc_channel, self.spectra_channel, self.reject_channel, self.energy_channel, self.sync_channel, self.misc_channel]]
 
         self.input_dict = self.make_comp_settings_tab(input_tab, "INPUT")
-
+        self.disc_dict = self.make_comp_settings_tab(disc_tab, "DISCRIMINATOR")
+        self.qdc_dict = self.make_comp_settings_tab(qdc_tab, "QDC")
+        self.spectra_dict = self.make_comp_settings_tab(spectra_tab, "SPECTRA")
+        self.reject_dict = self.make_comp_settings_tab(rejection_tab, "REJECTIONS")
+        self.energy_dict = self.make_comp_settings_tab(energy_tab, "ENERGY CALIBRATION")
+        self.sync_dict = self.make_comp_settings_tab(sync_tab, "SYNC")
+        self.coinc_dict = self.make_comp_settings_tab(coincidence_tab, "ONBOARD COINCIDENCES")
+        self.misc_dict = self.make_comp_settings_tab(misc_tab, "MISC")
+        
     def generate_graph_tab(self):
         """Generates the Graph tab which contains the plot zone and all of the different histogram buttons and settings."""
         grid_left = self.graph_tab.place_object(g.GridLayout(False), alignment=0)
@@ -1012,12 +1020,13 @@ class GUIv2():
 
         tab_units = parameters_units.get(tab_type)
         for param in list(parameters_xml_aliases[tab_type].keys()):
-            unit = tab_units.get(param)
+            unit = tab_units.get(param) if tab_units is not None else None
+            type_ = parameters_types[tab_type].get(param)
 
             if tab_type in ["REJECTIONS","ENERGY CALIBRATION","SYNC","MISC"]:
-                table_dict.add(param, None, None)
+                table_dict.add(param, [0]*5, [None]*5, type_)
             else:
-                table_dict.add(param, [0]*5, [unit]*5)
+                table_dict.add(param, [0]*5, [unit]*5, type_)
 
         
    
