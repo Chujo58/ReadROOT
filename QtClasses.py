@@ -391,6 +391,8 @@ class TableDictionary(g.Table):
 		----------
 		elements : int
 			Amount of elements/columns in the data.
+		edit : bool
+			Whether the table is editable by the user of the application or not.
 		"""
 
 		g.Table.__init__(self, elements, 0)
@@ -409,6 +411,8 @@ class TableDictionary(g.Table):
 
 		#Style
 		self._widget.setAlternatingRowColors(True)
+
+		self._widget : QtWidgets.QTableWidget = self._widget
 
 	def _format_data(self, data: typing.Union[int, float, bool, str], unit = None, type_ = 'float') -> str:
 		if type(data) is bool and data is not None:
@@ -447,6 +451,15 @@ class TableDictionary(g.Table):
 	def set_columns_size(self, width: int) -> None:
 		for i in range(self.dtsize):
 			self.set_column_width(i, width)
+
+	def set_item_color(self, key: str, column_number: int, color: tuple):
+		q_color = QtGui.QColor(*color) #Unpack the color values and sets them to the QColor to be used.
+		item = self._get_table_item(key, column_number)
+		item.setForeground(q_color)
+	
+	def set_items_colors(self, key: str, columns: bool, color: tuple):
+		for index, item in enumerate(columns):
+			if item: self.set_item_color(key, index, color)
 	
 	def set_item(self, key: str, value: list, unit: list, type_ = 'float'):
 		keys = self.keys
@@ -487,6 +500,11 @@ class TableDictionary(g.Table):
 
 	def add_item(self, key: str, value: list, unit: list, type_ = 'float'): self.set_item(key, value, unit, type_)
 	def add(self, key: str, value: list, unit: list, type_ = 'float'): self.set_item(key, value, unit, type_)
+
+	def _get_table_item(self, key: str, column: int) -> QtWidgets.QTableWidgetItem:
+		keys = self.keys
+		return self._widget.item(column, keys.index(key))
+
 
 	def get_item(self, key):
 		keys = self.keys

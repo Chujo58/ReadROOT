@@ -1081,6 +1081,11 @@ class GUIv2():
         self.reload_channels()
         self.changing_tree()
 
+    def _check_line(self, line_dataְ):
+        board_data = line_dataְ[0]
+        chn_data = line_dataְ[1:]
+        return [item == board_data for item in chn_data]
+
     def load_compass_settings(self, board_data, channels_data, table_dict: TableDictionary, key: str, *a):
         xml_key = key
         table_keys = table_dict.keys
@@ -1098,11 +1103,15 @@ class GUIv2():
 
                 if type_ == 'str':
                     data = [board_data[xml_key][parameters_xml_aliases[key][param]][0:-2], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]][0:-2] for i in range(4)]]
+                    bools = self._check_line(data)
                     table_dict.set_item(param, data, [unit]*5, type_)
+                    table_dict.set_items_colors(param, bools, (155,155,155))
                     continue
 
                 data = [board_data[xml_key][parameters_xml_aliases[key][param]], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]] for i in range(4)]]
+                bools = self._check_line(data)
                 table_dict.set_item(param, data, [unit]*5, type_)
+                table_dict.set_items_colors(param, bools, (155,155,155))
             return        
         
         for index, param in enumerate(table_keys):
@@ -1111,12 +1120,12 @@ class GUIv2():
             type_ = parameters_types[key].get(param)
 
             data = [board_data[xml_key][parameters_xml_aliases[key][param]], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]] for i in range(4)]]
-            # if key == "QDC":
-            #     # print(board_data[xml_key][parameters_xml_aliases[key][param]])
-            #     print(f"{param} :\t{data}") #FOR DEBUG
+            bools = self._check_line(data)
             table_dict.set_item(param, data, [unit]*5, type_)
+            table_dict.set_items_colors(param, bools, (155,155,155))
  
 
+    #Old function that uses a ComboBox to load each channel seperately.
     def load_channel_settings(self, xml_obj, combo_box: g.ComboBox, tree_dict: g.TreeDictionary, key: str, *a):
         """Load the data for a specified channel and setting group."""
         xml_key = key
