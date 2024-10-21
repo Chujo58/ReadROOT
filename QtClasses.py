@@ -452,14 +452,22 @@ class TableDictionary(g.Table):
 		for i in range(self.dtsize):
 			self.set_column_width(i, width)
 
-	def set_item_color(self, key: str, column_number: int, color: tuple):
-		q_color = QtGui.QColor(*color) #Unpack the color values and sets them to the QColor to be used.
+	def set_item_color(self, key: str, column_number: int, fg_color: tuple, bg_color: tuple = None):
+		q_fg_color = QtGui.QColor(*fg_color) #Unpack the color values and sets them to the QColor to be used.
+		#Check if the Background color is null:
+		if bg_color is not None:
+			q_bg_color = QtGui.QColor(*bg_color) #Unpack the color values and sets them to the QColor to be used.
+
 		item = self._get_table_item(key, column_number)
-		item.setForeground(q_color)
+		item.setForeground(q_fg_color)
+		if bg_color is not None:
+			item.setBackground(q_bg_color)
 	
-	def set_items_colors(self, key: str, columns: bool, color: tuple):
-		for index, item in enumerate(columns):
-			if item: self.set_item_color(key, index, color)
+	def set_items_colors(self, key: str, columns: bool, fg_color: tuple, bg_color: tuple):
+		for index, item in enumerate(columns, start=1):
+			if index > self.len: break
+			if item: self.set_item_color(key, index, fg_color, bg_color)
+
 	
 	def set_item(self, key: str, value: list, unit: list, type_ = 'float'):
 		keys = self.keys
@@ -503,7 +511,7 @@ class TableDictionary(g.Table):
 
 	def _get_table_item(self, key: str, column: int) -> QtWidgets.QTableWidgetItem:
 		keys = self.keys
-		return self._widget.item(column, keys.index(key))
+		return self._widget.item(keys.index(key), column)
 
 
 	def get_item(self, key):
@@ -533,9 +541,11 @@ if __name__ == "__main__":
 	obj.add_item('Test1', [4,2.4,200e-7],[None,None,'s'])
 	obj.add_item('Test1', [4,2.4,250e-7],['Vpp',None,'s'])
 
+	obj.set_items_colors('Test', [True, False, True, True], (255,0,0))
+
 	w.place_object(obj, alignment=0)
 	test = ureg.Quantity(16,'Vpp')
-	print(test)
+	print(obj.len)
 	# print(obj.get_item('Test1'))
 	# print(obj['Test1'])
 
