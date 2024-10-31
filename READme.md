@@ -40,3 +40,5 @@ This will install the latest version of ReadROOT posted on PyPi. After all depen
 > This is no longer necessary if the newer `Merger` is used. The old C++ code was made for the previous Root Reader version.
 
 In order for the time of flight (TOF) functions to work, C++ was used (Python was too slow). C++ needs very specific header files and the complete path to those files is needed. The two files that have those headers are `wrap.cpp` and `funcs.hpp`. If an error shows up when ReadROOT is imported (something along the lines of C++ not being able to find a header file) then verify those two.
+
+![Alt](https://repobeats.axiom.co/api/embed/2099d867d463d4ffd75874b56330fccbc7abe0d1.svg "Repobeats analytics image")
