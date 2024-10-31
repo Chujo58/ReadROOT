@@ -31,6 +31,7 @@ SelectionBox = QtClasses.SelectionBox
 Selecter = QtClasses.Selecter
 Logger = QtClasses.Logger
 bcolors = QtClasses.bcolors
+TableDictionary = QtClasses.TableDictionary
 # Import the Merger (Fast TOF calculations):
 from . import merge
 Merger = merge.Merger
@@ -49,6 +50,7 @@ import darkdetect as dd #type: ignore
 from PyQt5 import QtGui, QtCore, QtWidgets
 import superqt, datetime
 import pyautogui as p
+import typing
 #----------------------------------------------------------------------------
 
 g = egg.gui
@@ -56,6 +58,7 @@ g = egg.gui
 Horizontal = QtCore.Qt.Orientation.Horizontal
 Vertical = QtCore.Qt.Orientation.Vertical
 
+ENABLE_OLD = False
 
 
 parameters_xml_aliases = {"INPUT":{"Enable":"SRV_PARAM_CH_ENABLED",
@@ -322,6 +325,31 @@ class GUIv2():
             }
         """
 
+        #Qt Style sheets for changing the custom TableDictionary colors
+        self.dark_table = """
+            QTableView {
+                background-color: rgb(23, 35, 38);
+                selection-background-color: rgb(32, 81, 96);
+            }
+            QTableView::disabled{
+                background-color: rgb(29,29,29);
+                selection-background-color: rgb(72,72,72);
+            }
+        """
+
+        self.light_table = """
+            QTableView {
+                background-color: rgb(208, 244, 254);
+                selection-background-color: rgb(165, 230, 248);
+                alternate-background-color: white;
+            }
+            QTableView::disabled{
+                background-color: rgb(185,185,185);
+                selection-background-color: rgb(175,175,175);
+                alternate-background-color: white;
+            }
+        """
+
         #Qt Style sheets for changing the ComboBox colors
         self.dark_combo = """
             QComboBox {
@@ -581,18 +609,29 @@ class GUIv2():
         embed_compass_tab_area.set_current_tab(0)
 
         #Make the settings tab:
-        self.input_channel, self.input_dict = self.make_comp_settings_tab(input_tab, "INPUT")
-        self.disc_channel, self.disc_dict = self.make_comp_settings_tab(disc_tab, "DISCRIMINATOR")
-        self.qdc_channel, self.qdc_dict = self.make_comp_settings_tab(qdc_tab, "QDC")
-        self.spectra_channel, self.spectra_dict = self.make_comp_settings_tab(spectra_tab, "SPECTRA")
-        self.reject_channel, self.reject_dict = self.make_comp_settings_tab(rejection_tab, "REJECTIONS")
-        self.energy_channel, self.energy_dict = self.make_comp_settings_tab(energy_tab, "ENERGY CALIBRATION")
-        self.sync_channel, self.sync_dict = self.make_comp_settings_tab(sync_tab, "SYNC")
-        self.coinc_channel, self.coinc_dict = self.make_comp_settings_tab(coincidence_tab, "ONBOARD COINCIDENCES")
-        self.misc_channel, self.misc_dict = self.make_comp_settings_tab(misc_tab, "MISC")
+        if ENABLE_OLD:
+            self.input_channel, self.input_dict = self.make_comp_settings_tab(input_tab, "INPUT")
+            self.disc_channel, self.disc_dict = self.make_comp_settings_tab(disc_tab, "DISCRIMINATOR")
+            self.qdc_channel, self.qdc_dict = self.make_comp_settings_tab(qdc_tab, "QDC")
+            self.spectra_channel, self.spectra_dict = self.make_comp_settings_tab(spectra_tab, "SPECTRA")
+            self.reject_channel, self.reject_dict = self.make_comp_settings_tab(rejection_tab, "REJECTIONS")
+            self.energy_channel, self.energy_dict = self.make_comp_settings_tab(energy_tab, "ENERGY CALIBRATION")
+            self.sync_channel, self.sync_dict = self.make_comp_settings_tab(sync_tab, "SYNC")
+            self.coinc_channel, self.coinc_dict = self.make_comp_settings_tab(coincidence_tab, "ONBOARD COINCIDENCES")
+            self.misc_channel, self.misc_dict = self.make_comp_settings_tab(misc_tab, "MISC")
 
-        [channel.signal_changed.connect(self.reload_channels) for channel in [self.input_channel, self.disc_channel, self.qdc_channel, self.spectra_channel, self.reject_channel, self.energy_channel, self.sync_channel, self.misc_channel]]
+            [channel.signal_changed.connect(self.reload_channels) for channel in [self.input_channel, self.disc_channel, self.qdc_channel, self.spectra_channel, self.reject_channel, self.energy_channel, self.sync_channel, self.misc_channel]]
 
+        self.input_dict = self.make_comp_settings_tab(input_tab, "INPUT")
+        self.disc_dict = self.make_comp_settings_tab(disc_tab, "DISCRIMINATOR")
+        self.qdc_dict = self.make_comp_settings_tab(qdc_tab, "QDC")
+        self.spectra_dict = self.make_comp_settings_tab(spectra_tab, "SPECTRA")
+        self.reject_dict = self.make_comp_settings_tab(rejection_tab, "REJECTIONS")
+        self.energy_dict = self.make_comp_settings_tab(energy_tab, "ENERGY CALIBRATION")
+        self.sync_dict = self.make_comp_settings_tab(sync_tab, "SYNC")
+        self.coinc_dict = self.make_comp_settings_tab(coincidence_tab, "ONBOARD COINCIDENCES")
+        self.misc_dict = self.make_comp_settings_tab(misc_tab, "MISC")
+        
     def generate_graph_tab(self):
         """Generates the Graph tab which contains the plot zone and all of the different histogram buttons and settings."""
         grid_left = self.graph_tab.place_object(g.GridLayout(False), alignment=0)
@@ -948,27 +987,47 @@ class GUIv2():
         return primary_color, secondary_color, accent_color
 
     def make_comp_settings_tab(self, parent_tab, tab_type):
+        
         """Makes a CoMPASS setting tab with the specific `TreeDictionary` entries."""
         grid = parent_tab.place_object(g.GridLayout(False), alignment=0)
-        grid.place_object(g.Label("Channel :"))
-        channel_selector = grid.place_object(g.ComboBox(items=["BOARD","CH0","CH1","CH2","CH3"])).set_width(int(1200*self.ratio))
-        channel_selector._widget.setStyleSheet(self.dark_combo) if self.dark_theme_on else channel_selector._widget.setStyleSheet(self.light_combo)
-        grid.new_autorow()
-        tree_dict = grid.place_object(g.TreeDictionary(), alignment=0, column_span=2)
-        tree_dict._widget.setHeaderLabels(["Parameters are very long so here","Values"])
-        tree_dict._widget.setStyleSheet(self.dark_tree) if self.dark_theme_on else tree_dict._widget.setStyleSheet(self.light_tree)
+        
 
+        if ENABLE_OLD:
+            #OLD CODE TO REPLACE
+            grid.place_object(g.Label("Channel :"))
+            channel_selector = grid.place_object(g.ComboBox(items=["BOARD","CH0","CH1","CH2","CH3"])).set_width(int(1200*self.ratio))
+            channel_selector._widget.setStyleSheet(self.dark_combo) if self.dark_theme_on else channel_selector._widget.setStyleSheet(self.light_combo)
+            grid.new_autorow()
+            tree_dict = grid.place_object(g.TreeDictionary(), alignment=0, column_span=2)
+            tree_dict._widget.setHeaderLabels(["Parameters are very long so here","Values"])
+            tree_dict._widget.setStyleSheet(self.dark_tree) if self.dark_theme_on else tree_dict._widget.setStyleSheet(self.light_tree)
+
+            for param in list(parameters_xml_aliases[tab_type].keys()):
+                embed_dict = parameters_units.get(tab_type)
+                units = embed_dict.get(param) if embed_dict is not None else None
+                suffixOn = False if units is None else True
+                type_value = parameters_types[tab_type].get(param)
+                if tab_type in ["REJECTIONS","ENERGY CALIBRATION","SYNC","MISC"]:
+                    tree_dict.add_parameter(key=param, value=None, type=type_value, readonly=True)
+                else:
+                    tree_dict.add_parameter(key=param, value=None, type=type_value, suffix=units, siPrefix=suffixOn, readonly=True)
+
+            return channel_selector, tree_dict
+
+        table_dict: TableDictionary = grid.place_object(TableDictionary(6, False))
+        table_dict.set_columns_size(int(1248/table_dict.dtsize*self.ratio))
+        table_dict.set_width(int(1250*self.ratio))
+        table_dict.header(['PARAMETER','BOARD','CH0','CH1','CH2','CH3'])
+        table_dict._widget.setStyleSheet(self.dark_table) if self.dark_theme_on else table_dict._widget.setStyleSheet(self.light_table)
+
+        tab_units = parameters_units.get(tab_type)
         for param in list(parameters_xml_aliases[tab_type].keys()):
-            embed_dict = parameters_units.get(tab_type)
-            units = embed_dict.get(param) if embed_dict is not None else None
-            suffixOn = False if units is None else True
-            type_value = parameters_types[tab_type].get(param)
-            if tab_type in ["REJECTIONS","ENERGY CALIBRATION","SYNC","MISC"]:
-                tree_dict.add_parameter(key=param, value=None, type=type_value, readonly=True)
-            else:
-                tree_dict.add_parameter(key=param, value=None, type=type_value, suffix=units, siPrefix=suffixOn, readonly=True)
+            unit = tab_units.get(param) if tab_units is not None else None
+            type_ = parameters_types[tab_type].get(param)
 
-        return channel_selector, tree_dict
+            table_dict.add(param, [0]*5, [unit]*5, type_)
+
+        return table_dict  
    
     def search_folder(self):
         """Function that asks the user to look for a CoMPASS folder and loads the files and data."""
@@ -1021,7 +1080,52 @@ class GUIv2():
         
         self.reload_channels()
         self.changing_tree()
-       
+
+    def _check_line(self, line_dataְ):
+        board_data = line_dataְ[0]
+        chn_data = line_dataְ[1:]
+        return [item == board_data for item in chn_data]
+
+    def load_compass_settings(self, board_data, channels_data, table_dict: TableDictionary, key: str, *a):
+        xml_key = key
+        table_keys = table_dict.keys
+        tab_units = parameters_units.get(key)
+
+        if key == "ENERGY CALIBRATION":
+            xml_key = "ENERGY_CALIBRATION"
+        if key == "ONBOARD COINCIDENCES":
+            xml_key = "HARDWARE_COINCIDENCE"
+        if key == "SPECTRA":
+            for index, param in enumerate(table_keys):
+                if index == 0: continue
+                unit = tab_units.get(param) if tab_units is not None else None
+                type_ = parameters_types[key].get(param)
+
+                if type_ == 'str':
+                    data = [board_data[xml_key][parameters_xml_aliases[key][param]][0:-2], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]][0:-2] for i in range(4)]]
+                    bools = self._check_line(data)
+                    table_dict.set_item(param, data, [unit]*5, type_)
+                    table_dict.set_items_colors(param, bools, (155,155,155))
+                    continue
+
+                data = [board_data[xml_key][parameters_xml_aliases[key][param]], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]] for i in range(4)]]
+                bools = self._check_line(data)
+                table_dict.set_item(param, data, [unit]*5, type_)
+                table_dict.set_items_colors(param, bools, (155,155,155))
+            return        
+        
+        for index, param in enumerate(table_keys):
+            if index == 0: continue
+            unit = tab_units.get(param) if tab_units is not None else None
+            type_ = parameters_types[key].get(param)
+
+            data = [board_data[xml_key][parameters_xml_aliases[key][param]], *[channels_data[i][xml_key][parameters_xml_aliases[key][param]] for i in range(4)]]
+            bools = self._check_line(data)
+            table_dict.set_item(param, data, [unit]*5, type_)
+            table_dict.set_items_colors(param, bools, (155,155,155))
+ 
+
+    #Old function that uses a ComboBox to load each channel seperately.
     def load_channel_settings(self, xml_obj, combo_box: g.ComboBox, tree_dict: g.TreeDictionary, key: str, *a):
         """Load the data for a specified channel and setting group."""
         xml_key = key
@@ -1056,7 +1160,7 @@ class GUIv2():
     
     def reload_channels(self, *a):
         """Reloads the data shown in the CoMPASS settings if the channel selected is changed."""
-        if hasattr(self, "xml_parser"):
+        if hasattr(self, "xml_parser") and ENABLE_OLD:
             self.load_channel_settings(self.xml_parser, self.input_channel, self.input_dict, "INPUT")
             self.load_channel_settings(self.xml_parser, self.disc_channel, self.disc_dict, "DISCRIMINATOR")
             self.load_channel_settings(self.xml_parser, self.qdc_channel, self.qdc_dict, "QDC")
@@ -1065,6 +1169,19 @@ class GUIv2():
             self.load_channel_settings(self.xml_parser, self.energy_channel, self.energy_dict, "ENERGY CALIBRATION")
             self.load_channel_settings(self.xml_parser, self.sync_channel, self.sync_dict, "SYNC")
             self.load_channel_settings(self.xml_parser, self.misc_channel, self.misc_dict, "MISC")
+
+        if hasattr(self, "xml_parser"):
+            board_data = self.xml_parser.get_parameters()
+            channels_data = [self.xml_parser.get_chn_parameters(i) for i in range(4)]
+
+            self.load_compass_settings(board_data, channels_data, self.input_dict, "INPUT")
+            self.load_compass_settings(board_data, channels_data, self.disc_dict, "DISCRIMINATOR")
+            self.load_compass_settings(board_data, channels_data, self.qdc_dict, "QDC")
+            self.load_compass_settings(board_data, channels_data, self.spectra_dict, "SPECTRA")
+            self.load_compass_settings(board_data, channels_data, self.reject_dict, "REJECTIONS")
+            self.load_compass_settings(board_data, channels_data, self.energy_dict, "ENERGY CALIBRATION")
+            self.load_compass_settings(board_data, channels_data, self.sync_dict, "SYNC")
+            self.load_compass_settings(board_data, channels_data, self.misc_dict, "MISC")
 
     def changing_tree(self, *a):
         """Reloads the `.root` files inside of the project folder."""
