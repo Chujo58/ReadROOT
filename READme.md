@@ -41,4 +41,4 @@ This will install the latest version of ReadROOT posted on PyPi. After all depen
 
 In order for the time of flight (TOF) functions to work, C++ was used (Python was too slow). C++ needs very specific header files and the complete path to those files is needed. The two files that have those headers are `wrap.cpp` and `funcs.hpp`. If an error shows up when ReadROOT is imported (something along the lines of C++ not being able to find a header file) then verify those two.
 
-![Alt](https://repobeats.axiom.co/api/embed/2099d867d463d4ffd75874b56330fccbc7abe0d1.svg "Repobeats analytics image")
+![Alt](https://repobeats.axiom.co/api/embed/dc76eb22c474312ea4d7691369b1b67b558d1efc.svg "Repobeats analytics image")
